@@ -1,0 +1,5 @@
+[packages]
+google-api-python-client = '*'
+
+[requires]
+python_version = '3.6'

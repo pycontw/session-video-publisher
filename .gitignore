@@ -1,0 +1,8 @@
+.env
+*.code-workspace
+
+*.py[co]
+__pycache__
+
+# Client secrets downloaded from Google Console.
+client_id.json
