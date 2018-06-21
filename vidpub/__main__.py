@@ -71,7 +71,7 @@ info_list = resp.json()
 
 flow = InstalledAppFlow.from_client_secrets_file(
     os.environ['OAUTH2_CLIENT_SECRET'],
-    scopes=[YOUTUBE_SCOPE, YOUTUBE_UPLOAD_SCOPE],
+    scopes=[YOUTUBE_UPLOAD_SCOPE],
 )
 credentials = flow.run_console()
 youtube = build('youtube', 'v3', credentials=credentials)
@@ -96,12 +96,13 @@ for info in info_list:
     )
 
     with tqdm.tqdm(total=100, ascii=True) as progressbar:
-        written = 0
+        prev = 0
         while True:
             status, response = request.next_chunk()
             if status:
-                progressbar.update(int(status.progress() - written) * 100)
-                written = status.progress()
+                curr = int(status.progress() * 100)
+                progressbar.update(curr - prev)
+                prev = curr
             if response:
                 break
     print(f"    Done, as {response['id']}")
