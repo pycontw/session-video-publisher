@@ -87,7 +87,7 @@ for info in info_list:
     print(f"Uploading {info['subject']}")
     print(f"    {vid_path}")
     media = MediaFileUpload(
-        str(vid_path), chunksize=4096, resumable=True,
+        str(vid_path), chunksize=262144, resumable=True,
         mimetype='application/octet-stream',
     )
     request = youtube.videos().insert(
@@ -95,11 +95,11 @@ for info in info_list:
         media_body=media,
     )
 
-    with tqdm.tqdm(total=1000) as progressbar:
+    with tqdm.tqdm(total=100) as progressbar:
         while True:
             status, response = request.next_chunk()
             if status:
-                progressbar.update(status.progress() * 1000)
+                progressbar.update(int(status.progress() * 100))
             if response:
                 break
     print(f"    Done, as {response['id']}")
