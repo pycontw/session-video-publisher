@@ -106,6 +106,8 @@ for info in info_list:
                 break
     print(f"    Done, as {response['id']}")
 
-    new_name = vid_path.parent.joinpath('done', vid_path.name)
+    done = vid_path.parent.joinpath('done')
+    done.mkdir(parents=True, exist_ok=True)
+    new_name = done.joinpath(vid_path.name)
     print(f'    {vid_path} -> {new_name}')
     vid_path.rename(new_name)
