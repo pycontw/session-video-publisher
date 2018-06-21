@@ -9,7 +9,8 @@ from apiclient.discovery import build
 from apiclient.http import MediaFileUpload
 
 
-YOUTUBE_SCOPE = 'https://www.googleapis.com/auth/youtube.upload'
+YOUTUBE_SCOPE = 'https://www.googleapis.com/auth/youtube'
+YOUTUBE_UPLOAD_SCOPE = 'https://www.googleapis.com/auth/youtube.upload'
 
 
 def build_title(info):
@@ -54,7 +55,7 @@ def choose_video(info):
 resp = requests.get('https://tw.pycon.org/2018/ccip/')
 info_list = resp.json()
 
-cred, slug = google.auth.default(scopes=[YOUTUBE_SCOPE])
+cred, slug = google.auth.default(scopes=[YOUTUBE_SCOPE, YOUTUBE_UPLOAD_SCOPE])
 youtube = build('youtube', 'v3', credentials=cred)
 
 for info in info_list:

@@ -1,7 +1,7 @@
 [packages]
 google-api-python-client = '*'
-requests = "*"
-python-dateutil = "*"
+python-dateutil = '*'
+requests = '*'
 
 [requires]
 python_version = '3.6'
