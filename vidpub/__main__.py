@@ -95,11 +95,13 @@ for info in info_list:
         media_body=media,
     )
 
-    with tqdm.tqdm(total=100) as progressbar:
+    with tqdm.tqdm(total=100, ascii=True) as progressbar:
+        written = 0
         while True:
             status, response = request.next_chunk()
             if status:
-                progressbar.update(int(status.progress() * 100))
+                progressbar.update(int(status.progress() - written) * 100)
+                written = status.progress()
             if response:
                 break
     print(f"    Done, as {response['id']}")
