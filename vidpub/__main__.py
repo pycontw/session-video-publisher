@@ -1,16 +1,21 @@
 import datetime
+import os
 import pathlib
 
 import dateutil.parser
-import google.auth
+import fuzzywuzzy.fuzz
 import requests
+import tqdm
 
 from apiclient.discovery import build
 from apiclient.http import MediaFileUpload
+from google_auth_oauthlib.flow import InstalledAppFlow
 
 
 YOUTUBE_SCOPE = 'https://www.googleapis.com/auth/youtube'
 YOUTUBE_UPLOAD_SCOPE = 'https://www.googleapis.com/auth/youtube.upload'
+
+VIDEO_PATHS = list(pathlib.Path(os.environ['VIDEO_ROOT']).glob('*.mp4'))
 
 
 def build_title(info):
@@ -23,7 +28,7 @@ def build_slot(info):
         day = 2
     else:
         day = 1
-    return f'Day {day}, {info["room"]}'
+    return f"Day {day}, {info['room']}"
 
 
 def build_description(info):
@@ -36,27 +41,40 @@ def build_body(info):
         'snippet': {
             'title': build_title(info),
             'description': build_description(info),
-            'tags': 'PyCon Taiwan, PyCon Taiwan 2018, PyConTW, Python, PyCon',
-            'categoryId': 28,
+            'tags': [
+                'PyCon Taiwan',
+                'PyCon Taiwan 2018',
+                'Python',
+                'PyCon',
+            ],
+            'categoryId': '28',
         },
         'status': {
             'privacyStatus': 'unlisted',
+            'publishAt': None,
         },
     }
 
 
 def choose_video(info):
-    dirpath = pathlib.Path('C:\\Users\\uranusjr\\Downloads')
-    for path in dirpath.glob('*.mp4'):
-        if path.stem.endswith(info['subject']):
-            return path
+    matches = [
+        path for path in VIDEO_PATHS
+        if fuzzywuzzy.fuzz.ratio(info['subject'], path.stem) > 70
+    ]
+    if matches:
+        return max(matches)
+    return None
 
 
 resp = requests.get('https://tw.pycon.org/2018/ccip/')
 info_list = resp.json()
 
-cred, slug = google.auth.default(scopes=[YOUTUBE_SCOPE, YOUTUBE_UPLOAD_SCOPE])
-youtube = build('youtube', 'v3', credentials=cred)
+flow = InstalledAppFlow.from_client_secrets_file(
+    os.environ['OAUTH2_CLIENT_SECRET'],
+    scopes=[YOUTUBE_SCOPE, YOUTUBE_UPLOAD_SCOPE],
+)
+credentials = flow.run_console()
+youtube = build('youtube', 'v3', credentials=credentials)
 
 for info in info_list:
     if info['room'] != 'R0':
@@ -64,21 +82,28 @@ for info in info_list:
     body = build_body(info)
     vid_path = choose_video(info)
     if not vid_path:
+        print(f"No match, ignoring {info['subject']}")
         continue
-    media = MediaFileUpload(str(vid_path), chunksize=-1, resumable=True)
+    print(f"Uploading {info['subject']}")
+    print(f"    {vid_path}")
+    media = MediaFileUpload(
+        str(vid_path), chunksize=4096, resumable=True,
+        mimetype='application/octet-stream',
+    )
     request = youtube.videos().insert(
-        part='snippet,status',
-        body=build_body(info),
+        part=','.join(body.keys()), body=body,
         media_body=media,
     )
 
-    response = None
-    print(f'Uploading {info["subject"]}')
-    while not response:
-        status, response = request.next_chunk()
-    assert status % 100 == 2
-    print(f'Uploaded as {response["id"]}')
-    
+    with tqdm.tqdm(total=1000) as progressbar:
+        while True:
+            status, response = request.next_chunk()
+            if status:
+                progressbar.update(status.progress() * 1000)
+            if response:
+                break
+    print(f"    Done, as {response['id']}")
+
     new_name = vid_path.parent.joinpath('done', vid_path.name)
-    print(f'{vid_path} -> {new_name}')
+    print(f'    {vid_path} -> {new_name}')
     vid_path.rename(new_name)
