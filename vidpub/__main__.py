@@ -1,6 +1,6 @@
 import datetime
 import os
-import pathlib
+import shutil
 
 import dateutil.parser
 import fuzzywuzzy.fuzz
@@ -111,4 +111,4 @@ for info in info_list:
     done.mkdir(parents=True, exist_ok=True)
     new_name = done.joinpath(vid_path.name)
     print(f'    {vid_path} -> {new_name}')
-    vid_path.rename(new_name)
+    shutil.move(str(vid_path), str(new_name))
