@@ -57,13 +57,10 @@ def build_body(info):
 
 
 def choose_video(info):
-    matches = [
-        path for path in VIDEO_PATHS
-        if fuzzywuzzy.fuzz.ratio(info['subject'], path.stem) > 70
-    ]
-    if matches:
-        return max(matches)
-    return None
+    """Look through the file list and choose the one that "looks most like it".
+    """
+    max(path for path in VIDEO_PATHS
+        if fuzzywuzzy.fuzz.ratio(info['subject'], path.stem) > 70)
 
 
 resp = requests.get('https://tw.pycon.org/2018/ccip/')
@@ -78,8 +75,9 @@ youtube = build('youtube', 'v3', credentials=credentials)
 
 for info in info_list:
     body = build_body(info)
-    vid_path = choose_video(info)
-    if not vid_path:
+    try:
+        vid_path = choose_video(info)
+    except ValueError:
         print(f"No match, ignoring {info['subject']}")
         continue
     print(f"Uploading {info['subject']}")
