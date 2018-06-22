@@ -1,4 +1,5 @@
 import datetime
+import itertools
 import os
 import pathlib
 import time
@@ -18,8 +19,14 @@ YOUTUBE_SCOPE = 'https://www.googleapis.com/auth/youtube'
 YOUTUBE_UPLOAD_SCOPE = 'https://www.googleapis.com/auth/youtube.upload'
 
 VIDEO_ROOT = pathlib.Path(os.environ['VIDEO_ROOT']).resolve()
-VIDEO_PATHS = list(VIDEO_ROOT.glob('*.mp4'))
 print(f"Reading video files from {VIDEO_ROOT}")
+
+VIDEO_PATHS = list(itertools.chain.from_iterable(
+    VIDEO_ROOT.glob(f'*{ext}')
+    for ext in ('.avi', '.mp4')
+))
+assert VIDEO_PATHS
+print(f"    {len(VIDEO_PATHS)} files loaded")
 
 TIMEZONE_TAIPEI = pytz.timezone('Asia/Taipei')
 
