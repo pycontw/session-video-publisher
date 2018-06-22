@@ -5,6 +5,7 @@ import shutil
 
 import dateutil.parser
 import fuzzywuzzy.fuzz
+import pytz
 import requests
 import tqdm
 
@@ -18,6 +19,8 @@ YOUTUBE_UPLOAD_SCOPE = 'https://www.googleapis.com/auth/youtube.upload'
 
 VIDEO_PATHS = list(pathlib.Path(os.environ['VIDEO_ROOT']).glob('*.mp4'))
 
+TIMEZONE_TAIPEI = pytz.timezone('Asia/Taipei')
+
 
 def build_title(info):
     return f"{info['subject']} – {info['speaker']['name']} – PyCon Taiwan 2018"
@@ -25,11 +28,15 @@ def build_title(info):
 
 def build_slot(info):
     start = dateutil.parser.parse(info['start'])
+    end = dateutil.parser.parse(info['end'])
     if (start.date() - datetime.date(2018, 6, 1)).total_seconds() > 100:
         day = 2
     else:
         day = 1
-    return f"Day {day}, {info['room']}"
+    # Much simpler than messing with strftime().
+    start = str(start.astimezone(TIMEZONE_TAIPEI).time())[:5]
+    end = str(start.astimezone(TIMEZONE_TAIPEI).time())[:5]
+    return f"Day {day}, {info['room']} {start}–{end}"
 
 
 def build_description(info):
