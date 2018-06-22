@@ -17,7 +17,9 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 YOUTUBE_SCOPE = 'https://www.googleapis.com/auth/youtube'
 YOUTUBE_UPLOAD_SCOPE = 'https://www.googleapis.com/auth/youtube.upload'
 
-VIDEO_PATHS = list(pathlib.Path(os.environ['VIDEO_ROOT']).glob('*.mp4'))
+VIDEO_ROOT = pathlib.Path(os.environ['VIDEO_ROOT']).resolve()
+VIDEO_PATHS = list(VIDEO_ROOT.glob('*.mp4'))
+print(f"Reading video files from {VIDEO_ROOT}")
 
 TIMEZONE_TAIPEI = pytz.timezone('Asia/Taipei')
 
