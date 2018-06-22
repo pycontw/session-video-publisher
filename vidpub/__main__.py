@@ -37,7 +37,7 @@ def build_slot(info):
         day = 1
     # Much simpler than messing with strftime().
     start = str(start.astimezone(TIMEZONE_TAIPEI).time())[:5]
-    end = str(start.astimezone(TIMEZONE_TAIPEI).time())[:5]
+    end = str(end.astimezone(TIMEZONE_TAIPEI).time())[:5]
     return f"Day {day}, {info['room']} {start}–{end}"
 
 
@@ -69,8 +69,10 @@ def build_body(info):
 def choose_video(info):
     """Look through the file list and choose the one that "looks most like it".
     """
-    max(path for path in VIDEO_PATHS
-        if fuzzywuzzy.fuzz.ratio(info['subject'], path.stem) > 70)
+    return max(
+        path for path in VIDEO_PATHS
+        if fuzzywuzzy.fuzz.ratio(info['subject'], path.stem) > 70
+    )
 
 
 resp = requests.get('https://tw.pycon.org/2018/ccip/')
