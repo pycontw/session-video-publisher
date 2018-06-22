@@ -32,7 +32,12 @@ TIMEZONE_TAIPEI = pytz.timezone('Asia/Taipei')
 
 
 def build_title(info):
-    return f"{info['subject']} – {info['speaker']['name']} – PyCon Taiwan 2018"
+    parts = [info['subject'], info['speaker']['name'], 'PyCon Taiwan 2018']
+    title = ' – '.join(parts)
+    if len(title) > 100:
+        parts[0] = parts[0][:50]
+        title = ' – '.join(parts)
+    return title
 
 
 def build_slot(info):
@@ -53,7 +58,7 @@ def build_description(info):
     if info.get('slides'):
         slides_line = f"Slides: {info['slides']}"
     else:
-        slides_line = 'No slides.'
+        slides_line = 'The speaker did not upload his slides.'
     return f"{slot}\n\n{info['summary']}\n\n{slides_line}"
 
 
