@@ -1,7 +1,7 @@
 import datetime
 import os
 import pathlib
-import shutil
+import time
 
 import dateutil.parser
 import fuzzywuzzy.fuzz
@@ -117,6 +117,8 @@ for info in info_list:
 
     done = vid_path.parent.joinpath('done')
     done.mkdir(parents=True, exist_ok=True)
+
+    time.sleep(3)   # Wait until the client release the file?
     new_name = done.joinpath(vid_path.name)
     print(f'    {vid_path} -> {new_name}')
-    shutil.move(str(vid_path), str(new_name))
+    vid_path.rename(new_name)
