@@ -77,8 +77,6 @@ credentials = flow.run_console()
 youtube = build('youtube', 'v3', credentials=credentials)
 
 for info in info_list:
-    if info['room'] != 'R0':
-        continue
     body = build_body(info)
     vid_path = choose_video(info)
     if not vid_path:
