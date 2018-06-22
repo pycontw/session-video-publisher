@@ -46,8 +46,7 @@ def build_description(info):
     if info.get('slides'):
         slides_line = f"Slides: {info['slides']}"
     else:
-        speaker = f"{info['speaker']['name']} <{info['speaker']['email']}>"
-        slides_line = f"No slides. Ask the speaker: {speaker}."
+        slides_line = 'No slides.'
     return f"{slot}\n\n{info['summary']}\n\n{slides_line}"
 
 
