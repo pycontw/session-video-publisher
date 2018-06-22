@@ -43,7 +43,12 @@ def build_slot(info):
 
 def build_description(info):
     slot = build_slot(info)
-    return f"{slot}\n\n{info['summary']}\n\nSlides: {info['slides']}"
+    if info.get('slides'):
+        slides_line = f"Slides: {info['slides']}"
+    else:
+        speaker = f"{info['speaker']['name']} <{info['speaker']['email']}>"
+        slides_line = f"No slides. Ask the speaker: {speaker}."
+    return f"{slot}\n\n{info['summary']}\n\n{slides_line}"
 
 
 def build_body(info):
@@ -113,7 +118,7 @@ for info in info_list:
                 prev = curr
             if response:
                 break
-    print(f"    Done, as {response['id']}")
+    print(f"    Done, as: https://youtu.be/{response['id']}")
 
     done = vid_path.parent.joinpath('done')
     done.mkdir(parents=True, exist_ok=True)
