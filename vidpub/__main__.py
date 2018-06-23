@@ -32,7 +32,7 @@ TIMEZONE_TAIPEI = pytz.timezone('Asia/Taipei')
 
 
 def build_title(info):
-    parts = [info['subject'], info['speaker']['name'], 'PyCon Taiwan 2018']
+    parts = [info['subject'], info['speaker']['name'], f"PyCon Taiwan {os.environ['YEAR']}"]
     title = ' – '.join(parts)
     if len(title) > 100:
         parts[0] = parts[0][:50]
@@ -43,7 +43,11 @@ def build_title(info):
 def build_slot(info):
     start = dateutil.parser.parse(info['start'])
     end = dateutil.parser.parse(info['end'])
-    if (start.date() - datetime.date(2018, 6, 1)).total_seconds() > 100:
+    year, month, day = int(os.environ['YEAR']), int(
+        os.environ['MONTH']), int(os.environ['DAY'])
+    if (start.date() - datetime.date(year, month, day)).total_seconds() == 172800:
+        day = 3
+    elif (start.date() - datetime.date(year, month, day)).total_seconds() == 86400:
         day = 2
     else:
         day = 1
@@ -69,7 +73,7 @@ def build_body(info):
             'description': build_description(info),
             'tags': [
                 'PyCon Taiwan',
-                'PyCon Taiwan 2018',
+                f"PyCon Taiwan {os.environ['YEAR']}",
                 'Python',
                 'PyCon',
             ],
@@ -91,7 +95,7 @@ def choose_video(info):
     )
 
 
-resp = requests.get('https://tw.pycon.org/2018/ccip/')
+resp = requests.get(os.environ['URL'])
 info_list = resp.json()
 
 flow = InstalledAppFlow.from_client_secrets_file(
@@ -101,6 +105,7 @@ flow = InstalledAppFlow.from_client_secrets_file(
 credentials = flow.run_console()
 youtube = build('youtube', 'v3', credentials=credentials)
 
+
 for info in info_list:
     body = build_body(info)
     try:
@@ -108,6 +113,7 @@ for info in info_list:
     except ValueError:
         print(f"No match, ignoring {info['subject']}")
         continue
+
     print(f"Uploading {info['subject']}")
     print(f"    {vid_path}")
     media = MediaFileUpload(
@@ -134,7 +140,9 @@ for info in info_list:
     done = vid_path.parent.joinpath('done')
     done.mkdir(parents=True, exist_ok=True)
 
-    time.sleep(3)   # Wait until the client release the file?
+    while not done.exists():  # replace time.sleep(3)
+        time.sleep(1)
+
     new_name = done.joinpath(vid_path.name)
     print(f'    {vid_path} -> {new_name}')
     vid_path.rename(new_name)
