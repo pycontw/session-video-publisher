@@ -2,7 +2,6 @@ import datetime
 import itertools
 import os
 import pathlib
-import time
 
 import dateutil.parser
 import fuzzywuzzy.fuzz
@@ -11,7 +10,7 @@ import requests
 import tqdm
 
 from apiclient.discovery import build
-from apiclient.http import MediaFileUpload
+from apiclient.http import MediaInMemoryUpload
 from google_auth_oauthlib.flow import InstalledAppFlow
 
 
@@ -28,14 +27,27 @@ VIDEO_PATHS = list(itertools.chain.from_iterable(
 assert VIDEO_PATHS
 print(f"    {len(VIDEO_PATHS)} files loaded")
 
+DONE_DIR_PATH = VIDEO_ROOT.joinpath('done')
+DONE_DIR_PATH.mkdir(parents=True, exist_ok=True)
+
+FIRST_DATE = datetime.date(
+    int(os.environ['YEAR']),
+    int(os.environ['MONTH']),
+    int(os.environ['DAY']),
+)
+
 TIMEZONE_TAIPEI = pytz.timezone('Asia/Taipei')
 
 
 def build_title(info):
-    parts = [info['subject'], info['speaker']['name'], f"PyCon Taiwan {os.environ['YEAR']}"]
+    parts = [
+        info['subject'],
+        info['speaker']['name'],
+        f"PyCon Taiwan {os.environ['YEAR']}",
+    ]
     title = ' – '.join(parts)
-    if len(title) > 100:
-        parts[0] = parts[0][:50]
+    if len(title) > 100:    # YouTube has title length restriction.
+        parts[0] = f"{parts[0][:50]} …"
         title = ' – '.join(parts)
     return title
 
@@ -43,14 +55,16 @@ def build_title(info):
 def build_slot(info):
     start = dateutil.parser.parse(info['start'])
     end = dateutil.parser.parse(info['end'])
-    year, month, day = int(os.environ['YEAR']), int(
-        os.environ['MONTH']), int(os.environ['DAY'])
-    if (start.date() - datetime.date(year, month, day)).total_seconds() == 172800:
+
+    # Fuzzy-match days. Don't be too strict because there may be leap seconds.
+    d_secs = (start.date() - FIRST_DATE).total_seconds()
+    if d_secs > 47 * 60 * 60:
         day = 3
-    elif (start.date() - datetime.date(year, month, day)).total_seconds() == 86400:
+    elif d_secs > 23 * 60 * 60:
         day = 2
     else:
         day = 1
+
     # Much simpler than messing with strftime().
     start = str(start.astimezone(TIMEZONE_TAIPEI).time())[:5]
     end = str(end.astimezone(TIMEZONE_TAIPEI).time())[:5]
@@ -116,10 +130,7 @@ for info in info_list:
 
     print(f"Uploading {info['subject']}")
     print(f"    {vid_path}")
-    media = MediaFileUpload(
-        str(vid_path), chunksize=262144, resumable=True,
-        mimetype='application/octet-stream',
-    )
+    media = MediaInMemoryUpload(vid_path.read_bytes(), resumable=True)
     request = youtube.videos().insert(
         part=','.join(body.keys()), body=body,
         media_body=media,
@@ -137,12 +148,6 @@ for info in info_list:
                 break
     print(f"    Done, as: https://youtu.be/{response['id']}")
 
-    done = vid_path.parent.joinpath('done')
-    done.mkdir(parents=True, exist_ok=True)
-
-    while not done.exists():  # replace time.sleep(3)
-        time.sleep(1)
-
-    new_name = done.joinpath(vid_path.name)
+    new_name = DONE_DIR_PATH.joinpath(vid_path.name)
     print(f'    {vid_path} -> {new_name}')
     vid_path.rename(new_name)
