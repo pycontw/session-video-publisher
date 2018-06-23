@@ -140,9 +140,9 @@ for info in info_list:
     done = vid_path.parent.joinpath('done')
     done.mkdir(parents=True, exist_ok=True)
 
-    # time.sleep(3)   # Wait until the client release the file?
+    while not done.exists():  # replace time.sleep(3)
+        time.sleep(1)
+
     new_name = done.joinpath(vid_path.name)
-    while done.exists():  # replace time.sleep(3)
-        print(f'    {vid_path} -> {new_name}')
-        vid_path.rename(new_name)
-        break
+    print(f'    {vid_path} -> {new_name}')
+    vid_path.rename(new_name)
