@@ -76,7 +76,7 @@ def build_description(info):
     if info.get('slides'):
         slides_line = f"Slides: {info['slides']}"
     else:
-        slides_line = 'The speaker did not upload his slides.'
+        slides_line = 'Slides not uploaded by the speaker.'
     return f"{slot}\n\n{info['summary']}\n\n{slides_line}"
 
 
