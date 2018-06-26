@@ -35,7 +35,7 @@ parser.add_argument(
     help='Height of cropped video',
 )
 parser.add_argument(
-    '--threads', type=str, default='auto',
+    '--threads', '--thread', type=str, default='auto',
     help='Threads to use (passed directly to FFmpeg)',
 )
 options = parser.parse_args()
