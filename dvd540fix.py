@@ -20,7 +20,7 @@ o_dir = pathlib.Path(os.environ['VIDEO_ROOT'], 'out')
 
 
 o_dir.mkdir(parents=True, exist_ok=True)
-for i_path in pathlib.Path(i_dir).glob('*.avi'):
+for i_path in i_dir.glob('*.avi'):
     o_path = o_dir.joinpath(i_path.name)
     print(str(o_path))
     subprocess.run(
