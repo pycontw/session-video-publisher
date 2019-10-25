@@ -3,7 +3,6 @@ import itertools
 import os
 import pathlib
 
-import dateutil.parser
 import fuzzywuzzy.fuzz
 import pytz
 import requests
@@ -12,6 +11,8 @@ import tqdm
 from apiclient.discovery import build
 from apiclient.http import MediaInMemoryUpload
 from google_auth_oauthlib.flow import InstalledAppFlow
+
+from .info import Conference, ConferenceInfoSource
 
 
 YOUTUBE_SCOPE = "https://www.googleapis.com/auth/youtube"
@@ -35,60 +36,21 @@ FIRST_DATE = datetime.date(
     int(os.environ["YEAR"]), int(os.environ["MONTH"]), int(os.environ["DAY"])
 )
 
+CONFERENCE_NAME = f"PyCon Taiwan {FIRST_DATE.year}"
+
 TIMEZONE_TAIPEI = pytz.timezone("Asia/Taipei")
 
 
-def build_title(info):
-    parts = [
-        info["subject"],
-        info["speaker"]["name"],
-        f"PyCon Taiwan {os.environ['YEAR']}",
-    ]
-    title = " – ".join(parts)
-    if len(title) > 100:  # YouTube has title length restriction.
-        parts[0] = f"{parts[0][:50]} …"
-        title = " – ".join(parts)
-    return title
-
-
-def build_slot(info):
-    start = dateutil.parser.parse(info["start"])
-    end = dateutil.parser.parse(info["end"])
-
-    # Fuzzy-match days. Don't be too strict because there may be leap seconds.
-    d_secs = (start.date() - FIRST_DATE).total_seconds()
-    if d_secs > 47 * 60 * 60:
-        day = 3
-    elif d_secs > 23 * 60 * 60:
-        day = 2
-    else:
-        day = 1
-
-    # Much simpler than messing with strftime().
-    start = str(start.astimezone(TIMEZONE_TAIPEI).time())[:5]
-    end = str(end.astimezone(TIMEZONE_TAIPEI).time())[:5]
-    return f"Day {day}, {info['room']} {start}–{end}"
-
-
-def build_description(info):
-    slot = build_slot(info)
-    if info.get("slides"):
-        slides_line = f"Slides: {info['slides']}"
-    else:
-        slides_line = "Slides not uploaded by the speaker."
-    return f"{slot}\n\n{info['summary']}\n\n{slides_line}"
-
-
-def build_body(info):
+def build_body(session):
     return {
         "snippet": {
-            "title": build_title(info),
-            "description": build_description(info),
+            "title": session.render_video_title(),
+            "description": session.render_video_description(),
             "tags": [
+                session.conference.name,
                 "PyCon Taiwan",
-                f"PyCon Taiwan {os.environ['YEAR']}",
-                "Python",
                 "PyCon",
+                "Python",
             ],
             "categoryId": "28",
         },
@@ -96,18 +58,20 @@ def build_body(info):
     }
 
 
-def choose_video(info):
+def choose_video(session):
     """Look through the file list and choose the one that "looks most like it".
     """
     return max(
         path
         for path in VIDEO_PATHS
-        if fuzzywuzzy.fuzz.ratio(info["subject"], path.stem) > 70
+        if fuzzywuzzy.fuzz.ratio(session.title, path.stem) > 70
     )
 
 
-resp = requests.get(os.environ["URL"])
-info_list = resp.json()
+source = ConferenceInfoSource(
+    requests.get(os.environ["URL"]).json(),
+    Conference(CONFERENCE_NAME, FIRST_DATE, TIMEZONE_TAIPEI),
+)
 
 flow = InstalledAppFlow.from_client_secrets_file(
     os.environ["OAUTH2_CLIENT_SECRET"], scopes=[YOUTUBE_UPLOAD_SCOPE]
@@ -116,15 +80,15 @@ credentials = flow.run_console()
 youtube = build("youtube", "v3", credentials=credentials)
 
 
-for info in info_list:
-    body = build_body(info)
+for session in source.iter_sessions():
+    body = build_body(session)
     try:
-        vid_path = choose_video(info)
+        vid_path = choose_video(session)
     except ValueError:
-        print(f"No match, ignoring {info['subject']}")
+        print(f"No match, ignoring {session!r}")
         continue
 
-    print(f"Uploading {info['subject']}")
+    print(f"Uploading {session!r}")
     print(f"    {vid_path}")
     media = MediaInMemoryUpload(vid_path.read_bytes(), resumable=True)
     request = youtube.videos().insert(
