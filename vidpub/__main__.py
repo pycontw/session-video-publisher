@@ -12,7 +12,7 @@ from apiclient.discovery import build
 from apiclient.http import MediaInMemoryUpload
 from google_auth_oauthlib.flow import InstalledAppFlow
 
-from .info import Conference, ConferenceInfoSource
+from .info import Conference, ConferenceInfoSource, Session
 
 
 YOUTUBE_SCOPE = "https://www.googleapis.com/auth/youtube"
@@ -41,7 +41,7 @@ CONFERENCE_NAME = f"PyCon Taiwan {FIRST_DATE.year}"
 TIMEZONE_TAIPEI = pytz.timezone("Asia/Taipei")
 
 
-def build_body(session):
+def build_body(session: Session) -> dict:
     return {
         "snippet": {
             "title": session.render_video_title(),
@@ -58,7 +58,7 @@ def build_body(session):
     }
 
 
-def choose_video(session):
+def choose_video(session: Session) -> pathlib.Path:
     """Look through the file list and choose the one that "looks most like it".
     """
     return max(
