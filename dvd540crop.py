@@ -13,39 +13,43 @@ import pathlib
 import subprocess
 
 
-i_dir = pathlib.Path(os.environ['VIDEO_ROOT'], 'in')
-o_dir = pathlib.Path(os.environ['VIDEO_ROOT'], 'out')
+i_dir = pathlib.Path(os.environ["VIDEO_ROOT"], "in")
+o_dir = pathlib.Path(os.environ["VIDEO_ROOT"], "out")
 
 o_dir.mkdir(parents=True, exist_ok=True)
 
-input_mapping = {i_path.stem: i_path for i_path in i_dir.glob('*.avi')}
+input_mapping = {i_path.stem: i_path for i_path in i_dir.glob("*.avi")}
 
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
-    'filename', type=str, choices=list(input_mapping.keys()),
-    help='Input filename, not including extension',
+    "filename",
+    type=str,
+    choices=list(input_mapping.keys()),
+    help="Input filename, not including extension",
 )
 parser.add_argument(
-    '--top', type=int, required=True,
-    help='Top letterbox to crop',
+    "--top", type=int, required=True, help="Top letterbox to crop"
 )
 parser.add_argument(
-    '--height', type=int, required=True,
-    help='Height of cropped video',
+    "--height", type=int, required=True, help="Height of cropped video"
 )
 parser.add_argument(
-    '--threads', '--thread', type=str, default='auto',
-    help='Threads to use (passed directly to FFmpeg)',
+    "--threads",
+    "--thread",
+    type=str,
+    default="auto",
+    help="Threads to use (passed directly to FFmpeg)",
 )
 options = parser.parse_args()
 
 
 i_path = input_mapping[options.filename]
-o_path = o_dir.joinpath(f'{i_path.stem}.mp4')
+o_path = o_dir.joinpath(f"{i_path.stem}.mp4")
 subprocess.run(
     f'ffmpeg -i "{i_path}" -threads {options.threads} '
     f'-filter:v "crop=720:{options.height}:0:{options.top}" '
     f'-codec:v libx264 -crf 0 -preset veryslow "{o_path}"',
-    shell=True, check=True,
+    shell=True,
+    check=True,
 )
