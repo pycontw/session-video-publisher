@@ -1,16 +1,16 @@
+import argparse
 import datetime
 import itertools
+import json
 import os
 import pathlib
+import string
 
+import apiclient.http
 import fuzzywuzzy.fuzz
 import pytz
 import requests
 import tqdm
-
-from apiclient.discovery import build
-from apiclient.http import MediaInMemoryUpload
-from google_auth_oauthlib.flow import InstalledAppFlow
 
 from .info import Conference, ConferenceInfoSource, Session
 
@@ -42,9 +42,19 @@ TIMEZONE_TAIPEI = pytz.timezone("Asia/Taipei")
 
 
 def build_body(session: Session) -> dict:
+    title = session.render_video_title()
+
+    # Guess metadata language: If more than half is ASCII, probably English;
+    # othereise Chinese. Nothing scientific, just a vaguely educated guess.
+    # Note that this is NOT for the language of audio, just metadata.
+    if sum(c in string.ascii_letters for c in title) > len(title) / 2:
+        title_language = "en"
+    else:
+        title_language = "zh-hant"
+
     return {
         "snippet": {
-            "title": session.render_video_title(),
+            "title": title,
             "description": session.render_video_description(),
             "tags": [
                 session.conference.name,
@@ -52,6 +62,8 @@ def build_body(session: Session) -> dict:
                 "PyCon",
                 "Python",
             ],
+            "defaultAudioLanguage": session.lang,
+            "defaultLanguage": title_language,
             "categoryId": "28",
         },
         "status": {"privacyStatus": "unlisted", "publishAt": None},
@@ -68,45 +80,73 @@ def choose_video(session: Session) -> pathlib.Path:
     )
 
 
-source = ConferenceInfoSource(
-    requests.get(os.environ["URL"]).json(),
-    Conference(CONFERENCE_NAME, FIRST_DATE, TIMEZONE_TAIPEI),
-)
+def build_youtube():
+    from apiclient.discovery import build
+    from google_auth_oauthlib.flow import InstalledAppFlow
 
-flow = InstalledAppFlow.from_client_secrets_file(
-    os.environ["OAUTH2_CLIENT_SECRET"], scopes=[YOUTUBE_UPLOAD_SCOPE]
-)
-credentials = flow.run_console()
-youtube = build("youtube", "v3", credentials=credentials)
+    flow = InstalledAppFlow.from_client_secrets_file(
+        os.environ["OAUTH2_CLIENT_SECRET"], scopes=[YOUTUBE_UPLOAD_SCOPE]
+    )
+    credentials = flow.run_console()
+    return build("youtube", "v3", credentials=credentials)
 
 
-for session in source.iter_sessions():
-    body = build_body(session)
-    try:
-        vid_path = choose_video(session)
-    except ValueError:
-        print(f"No match, ignoring {session!r}")
-        continue
+def parse_args(argv):
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--upload", action="store_true", help="Actually upload",
+    )
+    return parser.parse_args(argv)
 
-    print(f"Uploading {session!r}")
-    print(f"    {vid_path}")
-    media = MediaInMemoryUpload(vid_path.read_bytes(), resumable=True)
-    request = youtube.videos().insert(
-        part=",".join(body.keys()), body=body, media_body=media
+
+def main(argv=None):
+    options = parse_args(argv)
+
+    if options.upload:
+        youtube = build_youtube()
+
+    source = ConferenceInfoSource(
+        requests.get(os.environ["URL"]).json(),
+        Conference(CONFERENCE_NAME, FIRST_DATE, TIMEZONE_TAIPEI),
     )
 
-    with tqdm.tqdm(total=100, ascii=True) as progressbar:
-        prev = 0
-        while True:
-            status, response = request.next_chunk()
-            if status:
-                curr = int(status.progress() * 100)
-                progressbar.update(curr - prev)
-                prev = curr
-            if response:
-                break
-    print(f"    Done, as: https://youtu.be/{response['id']}")
+    for session in source.iter_sessions():
+        body = build_body(session)
+        try:
+            vid_path = choose_video(session)
+        except ValueError:
+            print(f"No match, ignoring {session.title}")
+            continue
 
-    new_name = DONE_DIR_PATH.joinpath(vid_path.name)
-    print(f"    {vid_path} -> {new_name}")
-    vid_path.rename(new_name)
+        print(f"Uploading {session.title}")
+        print(f"    {vid_path}")
+        if not options.upload:
+            print(f"Would post: {json.dumps(body, indent=4)}\n")
+            continue
+
+        media = apiclient.http.MediaInMemoryUpload(
+            vid_path.read_bytes(), resumable=True,
+        )
+        request = youtube.videos().insert(
+            part=",".join(body.keys()), body=body, media_body=media
+        )
+
+        with tqdm.tqdm(total=100, ascii=True) as progressbar:
+            prev = 0
+            while True:
+                status, response = request.next_chunk()
+                if status:
+                    curr = int(status.progress() * 100)
+                    progressbar.update(curr - prev)
+                    prev = curr
+                if response:
+                    break
+        print(f"    Done, as: https://youtu.be/{response['id']}")
+
+        new_name = DONE_DIR_PATH.joinpath(vid_path.name)
+        print(f"    {vid_path} -> {new_name}")
+        vid_path.rename(new_name)
+
+
+if __name__ == "__main__":
+    main()

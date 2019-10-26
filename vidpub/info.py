@@ -10,7 +10,7 @@ class Speaker:
     data: dict
 
     def _iter_distinct_parts(self) -> typing.Iterator[str]:
-        seen = typing.Set[str]()
+        seen: typing.Set[str] = set()
         for lang in ("zh", "en"):
             part = f"{self.data[lang]['name']}\n\n{self.data[lang]['bio']}"
             if part not in seen:
@@ -38,6 +38,7 @@ class Session:
     slides: typing.Optional[str]
     speakers: typing.List[Speaker]
     room: str
+    lang: str
 
     def __repr__(self):
         return f"<Session {self.title!r}>"
@@ -63,6 +64,9 @@ class Session:
         # Much simpler than messing with strftime().
         start = str(self.start.astimezone(self.conference.timezone).time())[:5]
         end = str(self.end.astimezone(self.conference.timezone).time())[:5]
+
+        if self.room not in ("R0", "R1", "R2", "R3"):
+            return f"Day {day}, {start}–{end}"
         return f"Day {day}, {self.room} {start}–{end}"
 
     def render_video_description(self) -> str:
@@ -96,13 +100,17 @@ class ConferenceInfoSource:
         for data in self._session_data:
             if data["type"] not in ("talk", "keynote"):
                 continue
+            title = data["en"]["title"]
+            if data["type"] == "keynote":
+                title = f"Keynote: {title}"
             yield Session(
                 conference=self._confernece,
-                title=data["en"]["title"],
+                title=title,
                 description=data["en"]["description"],
                 start=dateutil.parser.parse(data["start"]),
                 end=dateutil.parser.parse(data["end"]),
                 slides=data["slide"] or None,
                 speakers=[self._speakers[key] for key in data["speakers"]],
                 room=self._rooms[data["room"]],
+                lang=("en" if "lng-ENEN" in data["tags"] else "zh-hant"),
             )
