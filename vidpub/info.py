@@ -100,9 +100,16 @@ class ConferenceInfoSource:
         for data in self._session_data:
             if data["type"] not in ("talk", "keynote"):
                 continue
+
             title = data["en"]["title"]
             if data["type"] == "keynote":
                 title = f"Keynote: {title}"
+                lang = "en"
+            elif "lng-ENEN" in data["tags"]:
+                lang = "en"
+            else:
+                lang = "zh-hant"
+
             yield Session(
                 conference=self._confernece,
                 title=title,
@@ -112,5 +119,5 @@ class ConferenceInfoSource:
                 slides=data["slide"] or None,
                 speakers=[self._speakers[key] for key in data["speakers"]],
                 room=self._rooms[data["room"]],
-                lang=("en" if "lng-ENEN" in data["tags"] else "zh-hant"),
+                lang=lang,
             )

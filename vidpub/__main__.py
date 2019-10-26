@@ -44,6 +44,11 @@ TIMEZONE_TAIPEI = pytz.timezone("Asia/Taipei")
 def build_body(session: Session) -> dict:
     title = session.render_video_title()
 
+    # Google API is wierdly strict on the format here. It REQUIRES exactly
+    # three digits of milliseconds, and only accepts "Z" suffix (not +00:00).
+    recorded_at = session.start.astimezone(pytz.utc)
+    recorded_at = recorded_at.strftime(r"%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
+
     # Guess metadata language: If more than half is ASCII, probably English;
     # othereise Chinese. Nothing scientific, just a vaguely educated guess.
     # Note that this is NOT for the language of audio, just metadata.
@@ -66,7 +71,12 @@ def build_body(session: Session) -> dict:
             "defaultLanguage": title_language,
             "categoryId": "28",
         },
-        "status": {"privacyStatus": "unlisted", "publishAt": None},
+        "status": {
+            "license": "creativeCommon",
+            "privacyStatus": "unlisted",
+            "publishAt": None,
+        },
+        "recordingDetails": {"recordingDate": recorded_at},
     }
 
 
@@ -94,7 +104,7 @@ def build_youtube():
 def parse_args(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--upload", action="store_true", help="Actually upload",
+        "--upload", action="store_true", help="Actually upload"
     )
     return parser.parse_args(argv)
 
@@ -125,7 +135,7 @@ def main(argv=None):
             continue
 
         media = apiclient.http.MediaInMemoryUpload(
-            vid_path.read_bytes(), resumable=True,
+            vid_path.read_bytes(), resumable=True
         )
         request = youtube.videos().insert(
             part=",".join(body.keys()), body=body, media_body=media
