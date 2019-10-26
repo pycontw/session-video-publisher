@@ -9,16 +9,9 @@ import dateutil.parser
 class Speaker:
     data: dict
 
-    def _iter_distinct_parts(self) -> typing.Iterator[str]:
-        seen: typing.Set[str] = set()
-        for lang in ("zh", "en"):
-            part = f"{self.data[lang]['name']}\n\n{self.data[lang]['bio']}"
-            if part not in seen:
-                yield part
-            seen.add(part)
-
     def render(self) -> str:
-        return "\n\n".join(self._iter_distinct_parts())
+        data = self.data["en"]
+        return f"Speaker: {data['name']}\n\n{data['bio']}"
 
 
 @dataclasses.dataclass()
