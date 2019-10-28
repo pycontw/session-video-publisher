@@ -92,14 +92,17 @@ def build_body(session: Session) -> dict:
     }
 
 
+def get_match_ratio(session: Session, path: pathlib.Path) -> float:
+    return fuzzywuzzy.fuzz.ratio(session.title, path.stem)
+
+
 def choose_video(session: Session) -> pathlib.Path:
     """Look through the file list and choose the one that "looks most like it".
     """
-    return max(
-        path
-        for path in VIDEO_PATHS
-        if fuzzywuzzy.fuzz.ratio(session.title, path.stem) > 70
-    )
+    score, match = max((get_match_ratio(session, p), p) for p in VIDEO_PATHS)
+    if score < 70:
+        raise ValueError("no match")
+    return match
 
 
 def build_youtube():
