@@ -41,21 +41,31 @@ CONFERENCE_NAME = f"PyCon Taiwan {FIRST_DATE.year}"
 TIMEZONE_TAIPEI = pytz.timezone("Asia/Taipei")
 
 
+def guess_language(s: str) -> str:
+    """Guess language of a string.
+
+    The only two possible return values are `zh-hant` and `en`.
+
+    Nothing scientific, just a vaguely educated guess. If more than half of the
+    string is ASCII, probably English; othereise we assume it's Chinese.
+    """
+    if sum(c in string.ascii_letters for c in s) > len(s) / 2:
+        return "en"
+    return "zh-hant"
+
+
+def format_datetime_for_google(dt: datetime.datetime) -> str:
+    """Format a datetime into ISO format for Google API.
+
+    Google API is wierdly strict on the format here. It REQUIRES exactly
+    three digits of milliseconds, and only accepts "Z" suffix (not +00:00),
+    so we need to roll our own formatting instead relying on `isoformat()`.
+    """
+    return dt.astimezone(pytz.utc).strftime(r"%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
+
+
 def build_body(session: Session) -> dict:
     title = session.render_video_title()
-
-    # Google API is wierdly strict on the format here. It REQUIRES exactly
-    # three digits of milliseconds, and only accepts "Z" suffix (not +00:00).
-    recorded_at = session.start.astimezone(pytz.utc)
-    recorded_at = recorded_at.strftime(r"%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
-
-    # Guess metadata language: If more than half is ASCII, probably English;
-    # othereise Chinese. Nothing scientific, just a vaguely educated guess.
-    # Note that this is NOT for the language of audio, just metadata.
-    if sum(c in string.ascii_letters for c in title) > len(title) / 2:
-        title_language = "en"
-    else:
-        title_language = "zh-hant"
 
     return {
         "snippet": {
@@ -68,7 +78,7 @@ def build_body(session: Session) -> dict:
                 "Python",
             ],
             "defaultAudioLanguage": session.lang,
-            "defaultLanguage": title_language,
+            "defaultLanguage": guess_language(title),
             "categoryId": "28",
         },
         "status": {
@@ -76,7 +86,9 @@ def build_body(session: Session) -> dict:
             "privacyStatus": "unlisted",
             "publishAt": None,
         },
-        "recordingDetails": {"recordingDate": recorded_at},
+        "recordingDetails": {
+            "recordingDate": format_datetime_for_google(session.start)
+        },
     }
 
 
