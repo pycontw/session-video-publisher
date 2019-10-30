@@ -21,6 +21,10 @@ class Conference:
     timezone: datetime.tzinfo
 
 
+# YouTube video title has a 100-character restriction.
+VIDEO_TITLE_LIMIT = 100
+
+
 @dataclasses.dataclass()
 class Session:
     conference: Conference
@@ -37,12 +41,11 @@ class Session:
         return f"<Session {self.title!r}>"
 
     def render_video_title(self) -> str:
-        title = f"{self.title} – {self.conference.name}"
-        if len(title) <= 100:  # YouTube has title length restriction.
-            return title
-        title_limit = 100 - len(self.conference.name) - 5
-        trimmed = self.title[:title_limit]
-        return f"{trimmed} … – {self.conference}"
+        suffix = f" – {self.conference.name}"
+        if len(self.title) + len(suffix) <= VIDEO_TITLE_LIMIT:
+            return self.title + suffix
+        title_limit = VIDEO_TITLE_LIMIT - len(suffix)
+        return self.title[:title_limit] + suffix
 
     def _render_slot(self) -> str:
         # Fuzzy-match days. Don't be too strict because of leap seconds.
