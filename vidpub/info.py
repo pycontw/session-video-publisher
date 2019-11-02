@@ -1,3 +1,4 @@
+import functools
 import dataclasses
 import datetime
 import typing
@@ -25,6 +26,19 @@ class Conference:
 VIDEO_TITLE_LIMIT = 100
 
 
+def _escape_return_string(f) -> typing.Callable[..., str]:
+    """YouTube wants you to escape angled brackets in title and description.
+    """
+
+    @functools.wraps(f)
+    def inner(*args, **kwargs):
+        s = f(*args, **kwargs)
+        s = s.replace("<", "&lt;").replace(">", "&gt;")
+        return s
+
+    return inner
+
+
 @dataclasses.dataclass()
 class Session:
     conference: Conference
@@ -40,6 +54,7 @@ class Session:
     def __repr__(self):
         return f"<Session {self.title!r}>"
 
+    @_escape_return_string
     def render_video_title(self) -> str:
         suffix = f" – {self.conference.name}"
         if len(self.title) + len(suffix) <= VIDEO_TITLE_LIMIT:
@@ -65,6 +80,7 @@ class Session:
             return f"Day {day}, {start}–{end}"
         return f"Day {day}, {self.room} {start}–{end}"
 
+    @_escape_return_string
     def render_video_description(self) -> str:
         if self.slides:
             slides_line = f"Slides: {self.slides}"
