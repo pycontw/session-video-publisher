@@ -125,7 +125,7 @@ def parse_args(argv):
     return parser.parse_args(argv)
 
 def media_batch_reader(file_path, chuncksize=64 * (1 << 20)):
-    print(f"Batch Reading (Video Size Large than 2GB):")
+    print(f"Reading Vedio from:")
     print(f"    {file_path}")
     blocks = b""
     with open(file_path, "rb") as f:
@@ -158,9 +158,8 @@ def main(argv=None):
             print(f"Would post: {json.dumps(body, indent=4)}\n")
             continue
 
-        media_bytes = media_batch_reader(vid_path) if vid_path.stat().st_size > 2 * (1 << 30) else vid_path.read_bytes()
         media = apiclient.http.MediaInMemoryUpload(
-            media_bytes, resumable=True
+            media_batch_reader(vid_path), resumable=True
         )
         request = youtube.videos().insert(
             part=",".join(body.keys()), body=body, media_body=media
