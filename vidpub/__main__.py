@@ -5,6 +5,7 @@ import json
 import os
 import pathlib
 import string
+import functools
 
 import apiclient.http
 import fuzzywuzzy.fuzz
@@ -123,6 +124,14 @@ def parse_args(argv):
     )
     return parser.parse_args(argv)
 
+def media_batch_reader(file_path, chuncksize=64 * (1 << 20)):
+    print(f"Reading Vedio from:")
+    print(f"    {file_path}")
+    blocks = b""
+    with open(file_path, "rb") as f:
+        for block in tqdm.tqdm(iter(functools.partial(f.read, chuncksize), b''), total=int(file_path.stat().st_size/chuncksize)):
+            blocks += block
+    return blocks
 
 def main(argv=None):
     options = parse_args(argv)
@@ -150,7 +159,7 @@ def main(argv=None):
             continue
 
         media = apiclient.http.MediaInMemoryUpload(
-            vid_path.read_bytes(), resumable=True
+            media_batch_reader(vid_path), resumable=True
         )
         request = youtube.videos().insert(
             part=",".join(body.keys()), body=body, media_body=media
