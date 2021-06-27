@@ -1,11 +1,11 @@
 import argparse
 import datetime
+import functools
 import itertools
 import json
 import os
 import pathlib
 import string
-import functools
 
 import apiclient.http
 import fuzzywuzzy.fuzz
@@ -14,7 +14,6 @@ import requests
 import tqdm
 
 from .info import Conference, ConferenceInfoSource, Session
-
 
 YOUTUBE_SCOPE = "https://www.googleapis.com/auth/youtube"
 YOUTUBE_UPLOAD_SCOPE = "https://www.googleapis.com/auth/youtube.upload"
@@ -125,8 +124,7 @@ def parse_args(argv):
     return parser.parse_args(argv)
 
 def media_batch_reader(file_path, chuncksize=64 * (1 << 20)):
-    print(f"Reading Vedio from:")
-    print(f"    {file_path}")
+    print(f"Reading Vedio from:\n\t{file_path}")
     blocks = b""
     with open(file_path, "rb") as f:
         for block in tqdm.tqdm(iter(functools.partial(f.read, chuncksize), b''), total=int(file_path.stat().st_size/chuncksize)):
