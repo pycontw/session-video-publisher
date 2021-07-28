@@ -1,5 +1,7 @@
 import argparse
 import datetime
+import functools
+import io
 import itertools
 import json
 import os
@@ -13,7 +15,6 @@ import requests
 import tqdm
 
 from .info import Conference, ConferenceInfoSource, Session
-
 
 YOUTUBE_SCOPE = "https://www.googleapis.com/auth/youtube"
 YOUTUBE_UPLOAD_SCOPE = "https://www.googleapis.com/auth/youtube.upload"
@@ -97,8 +98,7 @@ def get_match_ratio(session: Session, path: pathlib.Path) -> float:
 
 
 def choose_video(session: Session) -> pathlib.Path:
-    """Look through the file list and choose the one that "looks most like it".
-    """
+    """Look through the file list and choose the one that "looks most like it"."""
     score, match = max((get_match_ratio(session, p), p) for p in VIDEO_PATHS)
     if score < 70:
         raise ValueError("no match")
@@ -122,6 +122,18 @@ def parse_args(argv):
         "--upload", action="store_true", help="Actually upload"
     )
     return parser.parse_args(argv)
+
+
+def media_batch_reader(file_path, chuncksize=64 * (1 << 20)):
+    print(f"Reading Vedio from:\n\t{file_path}")
+    out = io.BytesIO()
+    total = file_path.stat().st_size // chuncksize
+    with open(file_path, "rb") as f:
+        for block in tqdm.tqdm(
+            functools.partial(f.read, chuncksize), total=total
+        ):
+            out.write(block)
+    return out.getvalue()
 
 
 def main(argv=None):
@@ -150,7 +162,7 @@ def main(argv=None):
             continue
 
         media = apiclient.http.MediaInMemoryUpload(
-            vid_path.read_bytes(), resumable=True
+            media_batch_reader(vid_path), resumable=True
         )
         request = youtube.videos().insert(
             part=",".join(body.keys()), body=body, media_body=media

@@ -1,6 +1,6 @@
-import functools
 import dataclasses
 import datetime
+import functools
 import typing
 
 import dateutil.parser
@@ -110,7 +110,7 @@ class ConferenceInfoSource:
 
     def iter_sessions(self) -> typing.Iterator[Session]:
         for data in self._session_data:
-            if data["type"] not in ("talk", "keynote"):
+            if data["type"] not in ("talk", "keynote", "community-track", "tutorial", "sponsored"):
                 continue
 
             title = data["en"]["title"]
