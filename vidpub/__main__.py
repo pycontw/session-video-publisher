@@ -1,5 +1,4 @@
-# import argparse
-import click
+import argparse
 import datetime
 import itertools
 import json
@@ -15,6 +14,10 @@ import tqdm
 
 from .info import Conference, ConferenceInfoSource, Session
 from slugify import slugify
+
+from apiclient.discovery import build
+from google_auth_oauthlib.flow import InstalledAppFlow
+
 
 # Video publisher variables
 YOUTUBE_SCOPE = "https://www.googleapis.com/auth/youtube"
@@ -103,23 +106,6 @@ def choose_video(session: Session, video_paths: list) -> pathlib.Path:
     return match
 
 
-def build_youtube(action: str):
-    from apiclient.discovery import build
-    from google_auth_oauthlib.flow import InstalledAppFlow
-
-    if action == 'upload':
-        flow = InstalledAppFlow.from_client_secrets_file(
-            os.environ["OAUTH2_CLIENT_SECRET"], scopes=[YOUTUBE_UPLOAD_SCOPE]
-        )
-        credentials = flow.run_console()
-        return build("youtube", "v3", credentials=credentials)
-
-    elif action == 'generate':
-        return build("youtube", "v3", developerKey=YOUTUBE_API_KEY)
-
-    else:
-        raise ValueError(f"Does not supported action = {action}")
-
 def compute_date(first_date: datetime.date, delta_days=0):
     conference_date = first_date + datetime.timedelta(days=delta_days)
 
@@ -144,159 +130,190 @@ def extract_info(description: str):
 
     return speaker, recorded_day
 
-@click.command()
-@click.option('-a', '--action', required=True, help='Actions to perform: upload or generate', \
-                type=click.Choice(['upload', 'generate'], case_sensitive=False))
-@click.option('-o', '--output_dir', default='./videos', help='Output video information path')
 
-def main(action, output_dir):
+def parse_args(argv):
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-u", "--upload", action="store_true", help="Upload videos to YouTube channel"
+    )
+    parser.add_argument(
+        "-p", "--playlist", action="store_true", help="Generate playlist information in json files"
+    )
+    parser.add_argument(
+        "-o", "--output_dir", default="./videos", help="Output path of video information"
+    )
+    return parser.parse_args(argv)
 
-    youtube = build_youtube(action)
 
-    if action == 'upload':
+def upload_video():
+    print(f"Uploading videos...")
 
-        VIDEO_ROOT = pathlib.Path(os.environ["VIDEO_ROOT"]).resolve()
-        print(f"Reading video files from {VIDEO_ROOT}")
+    # build youtube connection
+    flow = InstalledAppFlow.from_client_secrets_file(
+        os.environ["OAUTH2_CLIENT_SECRET"], scopes=[YOUTUBE_UPLOAD_SCOPE]
+    )
+    credentials = flow.run_console()
 
-        VIDEO_PATHS = list(
-            itertools.chain.from_iterable(
-                VIDEO_ROOT.glob(f"*{ext}") for ext in (".avi", ".mp4")
-            )
+    youtube = build("youtube", "v3", credentials=credentials)
+
+
+    # upload video
+    VIDEO_ROOT = pathlib.Path(os.environ["VIDEO_ROOT"]).resolve()
+    print(f"Reading video files from {VIDEO_ROOT}")
+
+    VIDEO_PATHS = list(
+        itertools.chain.from_iterable(
+            VIDEO_ROOT.glob(f"*{ext}") for ext in (".avi", ".mp4")
         )
-        assert VIDEO_PATHS
-        print(f"    {len(VIDEO_PATHS)} files loaded")
+    )
+    assert VIDEO_PATHS
+    print(f"    {len(VIDEO_PATHS)} files loaded")
 
-        DONE_DIR_PATH = VIDEO_ROOT.joinpath("done")
-        DONE_DIR_PATH.mkdir(parents=True, exist_ok=True)
+    DONE_DIR_PATH = VIDEO_ROOT.joinpath("done")
+    DONE_DIR_PATH.mkdir(parents=True, exist_ok=True)
 
-        source = ConferenceInfoSource(
-            requests.get(os.environ["URL"]).json(),
-            Conference(CONFERENCE_NAME, FIRST_DATE, TIMEZONE_TAIPEI),
+    source = ConferenceInfoSource(
+        requests.get(os.environ["URL"]).json(),
+        Conference(CONFERENCE_NAME, FIRST_DATE, TIMEZONE_TAIPEI),
+    )
+
+    for session in source.iter_sessions():
+        body = build_body(session)
+        try:
+            vid_path = choose_video(session, VIDEO_PATHS)
+        except ValueError:
+            print(f"No match, ignoring {session.title}")
+            continue
+
+        print(f"Uploading {session.title}")
+        print(f"    {vid_path}")
+
+        media = apiclient.http.MediaInMemoryUpload(
+            vid_path.read_bytes(), resumable=True
         )
-
-        for session in source.iter_sessions():
-            body = build_body(session)
-            try:
-                vid_path = choose_video(session, VIDEO_PATHS)
-            except ValueError:
-                print(f"No match, ignoring {session.title}")
-                continue
-
-            print(f"Uploading {session.title}")
-            print(f"    {vid_path}")
-
-            media = apiclient.http.MediaInMemoryUpload(
-                vid_path.read_bytes(), resumable=True
-            )
-            request = youtube.videos().insert(
-                part=",".join(body.keys()), body=body, media_body=media
-            )
-
-            with tqdm.tqdm(total=100, ascii=True) as progressbar:
-                prev = 0
-                while True:
-                    status, response = request.next_chunk()
-                    if status:
-                        curr = int(status.progress() * 100)
-                        progressbar.update(curr - prev)
-                        prev = curr
-                    if response:
-                        break
-            print(f"    Done, as: https://youtu.be/{response['id']}")
-
-            new_name = DONE_DIR_PATH.joinpath(vid_path.name)
-            print(f"    {vid_path} -> {new_name}")
-            vid_path.rename(new_name)
-
-    elif action == 'generate':
-
-        playlist_id = ''
-        playlist_video_num = 0
-
-        # get specified playlist of the channel
-        if PLAYLIST_ID:
-            request = youtube.playlists().list(
-                part='contentDetails, snippet',
-                id=[PLAYLIST_ID],
-                maxResults=1
-            )
-
-            response = request.execute()
-
-            print(response)
-            playlist = response['items'][0]
-
-            playlist_id = playlist['id']
-            playlist_video_num = int(playlist['contentDetails']['itemCount'])
-
-            print(f"Playlist ID = {playlist_id}")
-            print(f"Playlist title = {playlist['snippet']['title']}")
-            print(f"Playlist Video numbers = {playlist_video_num}")
-
-        elif PLAYLIST_TITLE and not PLAYLIST_ID:
-            request = youtube.playlists().list(
-                part='contentDetails, snippet',
-                channelId=CHANNEL_ID,
-                maxResults=10
-            )
-
-            response = request.execute()
-
-            # find the target playlist from .env setting
-            for playlist in response['items']:
-                if PLAYLIST_TITLE.strip().lower() in playlist['snippet']['title'].strip().lower():
-                    playlist_id = playlist['id']
-                    playlist_video_num = int(playlist['contentDetails']['itemCount'])
-
-                    print(f"Playlist ID = {playlist_id}")
-                    print(f"Playlist title = {playlist['snippet']['title']}")
-                    print(f"Playlist Video numbers = {playlist_video_num}")
-        else:
-            print(f"[Warning] The video number exceeds maximum limit.")
-
-
-        if playlist_video_num > MAX_RESULT_LIMIT:
-            print(f"[Warning] The video number exceeds maximum limit, please set MAX_RESULT_LIMIT to larger value.")
-
-
-        pl_request = youtube.playlistItems().list(
-            part='snippet',
-            playlistId=playlist_id,
-            maxResults=playlist_video_num
+        request = youtube.videos().insert(
+            part=",".join(body.keys()), body=body, media_body=media
         )
 
-        pl_response = pl_request.execute()
+        with tqdm.tqdm(total=100, ascii=True) as progressbar:
+            prev = 0
+            while True:
+                status, response = request.next_chunk()
+                if status:
+                    curr = int(status.progress() * 100)
+                    progressbar.update(curr - prev)
+                    prev = curr
+                if response:
+                    break
+        print(f"    Done, as: https://youtu.be/{response['id']}")
 
-        video_records = {}
+        new_name = DONE_DIR_PATH.joinpath(vid_path.name)
+        print(f"    {vid_path} -> {new_name}")
+        vid_path.rename(new_name)
 
-        for video in pl_response['items']:
 
-            vid = video['snippet']['resourceId']['videoId']
-            data = {}
+def generate_playlist(output_dir: str):
+    print(f"Generating playlist information...")
 
-            data['description'] = video['snippet']['description']
-            data['speakers'], data['recorded'] = extract_info(video['snippet']['description'])
-            data['title'] = video['snippet']['title']
-            data['thumbnail_url'] = video['snippet']['thumbnails']['high']['url']
-            data['videos'] = [{'type':'youtube', 'url': f"https://www.youtube.com/watch?v={vid}"}]
+    # build youtube connection
+    youtube = build("youtube", "v3", developerKey=YOUTUBE_API_KEY)
 
-            video_records[vid] = {'data': data}
 
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
+    # generate playlist
+    playlist_id = ''
+    playlist_video_num = 0
 
-        for key in video_records.keys():
-            file_name = f"{video_records[key]['data']['title'].lower().strip()}".replace(':', '').replace(' ', '-')
-            file_name = slugify(file_name)
-            data = video_records[key]['data']
+    # get specified playlist of the channel
+    if PLAYLIST_ID:
+        request = youtube.playlists().list(
+            part='contentDetails, snippet',
+            id=[PLAYLIST_ID],
+            maxResults=1
+        )
 
-            with open(os.path.join(output_dir, f"{file_name}.json"), 'w') as json_file:
-                json.dump(data, json_file, indent=4)
+        response = request.execute()
 
-            print(file_name)
+        print(response)
+        playlist = response['items'][0]
 
+        playlist_id = playlist['id']
+        playlist_video_num = int(playlist['contentDetails']['itemCount'])
+
+        print(f"Playlist ID = {playlist_id}")
+        print(f"Playlist title = {playlist['snippet']['title']}")
+        print(f"Playlist Video numbers = {playlist_video_num}")
+
+    elif PLAYLIST_TITLE and not PLAYLIST_ID:
+        request = youtube.playlists().list(
+            part='contentDetails, snippet',
+            channelId=CHANNEL_ID,
+            maxResults=10
+        )
+
+        response = request.execute()
+
+        # find the target playlist from .env setting
+        for playlist in response['items']:
+            if PLAYLIST_TITLE.strip().lower() in playlist['snippet']['title'].strip().lower():
+                playlist_id = playlist['id']
+                playlist_video_num = int(playlist['contentDetails']['itemCount'])
+
+                print(f"Playlist ID = {playlist_id}")
+                print(f"Playlist title = {playlist['snippet']['title']}")
+                print(f"Playlist Video numbers = {playlist_video_num}")
     else:
-        print(f"Does not supported action = {action}")
+        print(f"[Warning] The video number exceeds maximum limit.")
+
+
+    if playlist_video_num > MAX_RESULT_LIMIT:
+        print(f"[Warning] The video number exceeds maximum limit, please set MAX_RESULT_LIMIT to larger value.")
+
+
+    pl_request = youtube.playlistItems().list(
+        part='snippet',
+        playlistId=playlist_id,
+        maxResults=playlist_video_num
+    )
+
+    pl_response = pl_request.execute()
+
+    video_records = {}
+
+    for video in pl_response['items']:
+
+        vid = video['snippet']['resourceId']['videoId']
+        data = {}
+
+        data['description'] = video['snippet']['description']
+        data['speakers'], data['recorded'] = extract_info(video['snippet']['description'])
+        data['title'] = video['snippet']['title']
+        data['thumbnail_url'] = video['snippet']['thumbnails']['high']['url']
+        data['videos'] = [{'type':'youtube', 'url': f"https://www.youtube.com/watch?v={vid}"}]
+
+        video_records[vid] = {'data': data}
+
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    for key in video_records.keys():
+        file_name = f"{video_records[key]['data']['title'].lower().strip()}".replace(':', '').replace(' ', '-')
+        file_name = slugify(file_name)
+        data = video_records[key]['data']
+
+        with open(os.path.join(output_dir, f"{file_name}.json"), 'w') as json_file:
+            json.dump(data, json_file, indent=4)
+
+        print(file_name)
+
+
+def main(argv=None):
+    options = parse_args(argv)
+
+    if options.upload:
+        upload_video()
+
+    if options.playlist:
+        generate_playlist(options.output_dir)
 
 
 if __name__ == "__main__":

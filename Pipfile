@@ -9,7 +9,6 @@ requests = '*'
 requests-oauthlib = '*'
 tqdm = '*'
 slugify = "*"
-click = "*"
 
 [dev-packages]
 mypy = '*'
@@ -18,5 +17,5 @@ mypy = '*'
 python_version = '3.7'
 
 [scripts]
-upload = 'python -m vidpub --action=upload'
-generate = 'python -m vidpub --action=generate'
+upload = 'python -m vidpub --upload'
+playlist = 'python -m vidpub --playlist'

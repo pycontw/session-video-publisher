@@ -2,9 +2,10 @@
 Session Video Uploader
 ======================
 
-Support features:
+Supported features:
 - Upload session videos to YouTube.
 - Generate PyCon YouTube channel video data.
+  - Purpose: Generating PyCon YouTube channel video data for [PyVideo](https://github.com/pyvideo/data) usage
 
 To use:
 
@@ -28,15 +29,13 @@ To use:
     # ===== Following are for generate =====
 
     # YouTube data v3 API key
-    YOUTUBE_API_KEY='AIzaSyAWro8W3P02k9ouJS-1i7znK3tGW7TejsM'
+    YOUTUBE_API_KEY='YOUR_YOUTUBE_API_KEY'
 
     # YouTube channel information
     # You can provide CHANNEL_ID & PLAYLIST_TITLE
     # or provide PLAYLIST_ID information is enough
-    CHANNEL_ID='UCHLnNgRnfGYDzPCCH8qGbQw'
-    PLAYLIST_TITLE='PyCon Taiwan 2020'
-
-    #PLAYLIST_ID='PLqtzN042QpfeN9YsLKI7RW78v1maUUYNw'
+    CHANNEL_ID='YOUR_YOUTUBE_CHANNEL_ID'
+    PLAYLIST_TITLE='YOUR_YOUTUBE_PLAYLIST_TITLE'
 
 
     # ===== Following are for both actions =====
@@ -50,7 +49,7 @@ To use:
 
 * ``pipenv run upload`` for uploading session videos
 
-* ``pipenv run generate`` for generating video data
+* ``pipenv run playlist`` for generating video playlist data
 
 
 Troubleshooting
