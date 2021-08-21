@@ -26,7 +26,7 @@ To use:
     URL='https://tw.pycon.org/2018/ccip/'
 
 
-    # ===== Following are for generate =====
+    # ===== Following are for playlist generation =====
 
     # YouTube data v3 API key
     YOUTUBE_API_KEY='YOUR_YOUTUBE_API_KEY'
