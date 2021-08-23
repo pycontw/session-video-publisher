@@ -15,11 +15,10 @@ FIRST_DATE = datetime.date(
     int(os.environ["YEAR"]), int(os.environ["MONTH"]), int(os.environ["DAY"])
 )
 
-YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY", "")
-CHANNEL_ID = os.environ.get("CHANNEL_ID", "")
+YOUTUBE_API_KEY = os.environ["YOUTUBE_API_KEY"]
+CHANNEL_ID = os.environ["CHANNEL_ID"]
 PLAYLIST_TITLE = os.environ.get("PLAYLIST_TITLE", "")
 PLAYLIST_ID = os.environ.get("PLAYLIST_ID", "")
-CONFERENCE_DAY1 = os.environ.get("CONFERENCE_DAY1", "")
 
 MAX_RESULT_LIMIT = 100
 

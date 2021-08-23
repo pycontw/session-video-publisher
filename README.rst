@@ -13,7 +13,7 @@ To use:
 
 * Add ``.env`` in project containing::
 
-    # ===== Following are for upload =====
+    # ===== Followings are for upload videos =====
     # Point to the directory containing video files.
     # Video files should be named by the session title. They don't need to be
     # exactly identical, the script will use fuzzy match to find them.
@@ -26,7 +26,7 @@ To use:
     URL='https://tw.pycon.org/2018/ccip/'
 
 
-    # ===== Following are for playlist generation =====
+    # ===== Followings are for playlist generation =====
 
     # YouTube data v3 API key
     YOUTUBE_API_KEY='YOUR_YOUTUBE_API_KEY'
@@ -38,7 +38,7 @@ To use:
     PLAYLIST_TITLE='YOUR_YOUTUBE_PLAYLIST_TITLE'
 
 
-    # ===== Following are for both actions =====
+    # ===== Followings are for both actions =====
 
     # First day of the conference.
     YEAR='2020'
