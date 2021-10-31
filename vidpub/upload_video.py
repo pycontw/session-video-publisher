@@ -1,6 +1,7 @@
 import datetime
 import itertools
-import json
+import functools
+import io
 import os
 import pathlib
 import string
@@ -87,14 +88,22 @@ def get_match_ratio(session: Session, path: pathlib.Path) -> float:
 
 
 def choose_video(session: Session, video_paths: list) -> pathlib.Path:
-    """Look through the file list and choose the one that "looks most like it".
-    """
+   """Look through the file list and choose the one that "looks most like it"."""
     score, match = max((get_match_ratio(session, p), p) for p in video_paths)
     if score < 70:
         raise ValueError("no match")
     return match
 
-
+def media_batch_reader(file_path, chuncksize=64 * (1 << 20)):
+    print(f"Reading Vedio from:\n\t{file_path}")
+    out = io.BytesIO()
+    total = file_path.stat().st_size // chuncksize
+    with open(file_path, "rb") as f:
+        for block in tqdm.tqdm(
+            functools.partial(f.read, chuncksize), total=total
+        ):
+            out.write(block)
+    return out.getvalue()
 
 def upload_video():
     print(f"Uploading videos...")
@@ -140,7 +149,7 @@ def upload_video():
         print(f"    {vid_path}")
 
         media = apiclient.http.MediaInMemoryUpload(
-            vid_path.read_bytes(), resumable=True
+            media_batch_reader(vid_path), resumable=True
         )
         request = youtube.videos().insert(
             part=",".join(body.keys()), body=body, media_body=media
