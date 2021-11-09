@@ -3,9 +3,12 @@ Session Video Uploader
 ======================
 
 Supported features:
-- Upload session videos to YouTube.
-- Generate PyCon YouTube channel video data.
-  - Purpose: Generating PyCon YouTube channel video data for [PyVideo](https://github.com/pyvideo/data) usage
+
+* Upload session videos to YouTube.
+
+* Generate PyCon YouTube channel video data.
+
+  * Purpose: Generating PyCon YouTube channel video data for [PyVideo](https://github.com/pyvideo/data) usage
 
 To use:
 
