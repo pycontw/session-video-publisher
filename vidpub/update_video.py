@@ -18,9 +18,6 @@ from apiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 
 
-# Video publisher variables
-YOUTUBE_SCOPE = "https://www.googleapis.com/auth/youtube"
-YOUTUBE_UPLOAD_SCOPE = "https://www.googleapis.com/auth/youtube.upload"
 
 FIRST_DATE = datetime.date(
     int(os.environ["YEAR"]), int(os.environ["MONTH"]), int(os.environ["DAY"])
@@ -53,9 +50,9 @@ def build_body(session: Session) -> dict:
             "description": session.render_video_description(),
             "tags": [
                 session.conference.name,
-                "PyCon Taiwan",
-                "PyCon",
-                "Python",
+                "pyconapac2022",
+                "pycontw",
+                "python",
             ],
             "defaultAudioLanguage": session.lang,
             "defaultLanguage": guess_language(title),
@@ -83,54 +80,62 @@ def format_datetime_for_google(dt: datetime.datetime) -> str:
     return dt.astimezone(pytz.utc).strftime(r"%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
 
-def get_match_ratio(session: Session, path: pathlib.Path) -> float:
-    return fuzzywuzzy.fuzz.ratio(session.title, path.stem)
+def get_match_ratio(session: Session, title: str) -> float:
+    return fuzzywuzzy.fuzz.ratio(session.title, title)
 
 
-def choose_video(session: Session, video_paths: list) -> pathlib.Path:
+def choose_video(session: Session, videos: list) -> str:
     """Look through the file list and choose the one that "looks most like it"."""
-    score, match = max((get_match_ratio(session, p), p) for p in video_paths)
-    if score < 70:
+    score, match = max((get_match_ratio(session, video["title"]), video["vid"]) for video in videos)
+    if score < 40:
         raise ValueError("no match")
     return match
 
-def media_batch_reader(file_path, chuncksize=64 * (1 << 20)):
-    print(f"Reading Vedio from:\n\t{file_path}")
-    out = io.BytesIO()
-    total = file_path.stat().st_size // chuncksize
-    with open(file_path, "rb") as f:
-        for block in tqdm.tqdm(
-            functools.partial(f.read, chuncksize), total=total
-        ):
-            out.write(block)
-    return out.getvalue()
-
-def upload_video():
-    print(f"Uploading videos...")
+def update_video():
+    print(f"Update videos...")
+    YOUTUBE_UPDATE_SCOPE = ["https://www.googleapis.com/auth/youtube", "https://www.googleapis.com/auth/youtube.force-ssl"]
 
     # build youtube connection
     flow = InstalledAppFlow.from_client_secrets_file(
-        os.environ["OAUTH2_CLIENT_SECRET"], scopes=[YOUTUBE_UPLOAD_SCOPE]
+        os.environ["OAUTH2_CLIENT_SECRET"], scopes=YOUTUBE_UPDATE_SCOPE
     )
     credentials = flow.run_console()
-
     youtube = build("youtube", "v3", credentials=credentials)
 
-
-    # upload video
-    VIDEO_ROOT = pathlib.Path(os.environ["VIDEO_ROOT"]).resolve()
-    print(f"Reading video files from {VIDEO_ROOT}")
-
-    VIDEO_PATHS = list(
-        itertools.chain.from_iterable(
-            VIDEO_ROOT.glob(f"*{ext}") for ext in (".avi", ".mp4")
-        )
+    request = youtube.playlists().list(
+        part="contentDetails, snippet, id", id=[os.environ["PLAYLIST_ID"]], maxResults=1
     )
-    assert VIDEO_PATHS
-    print(f"    {len(VIDEO_PATHS)} files loaded")
 
-    DONE_DIR_PATH = VIDEO_ROOT.joinpath("done")
-    DONE_DIR_PATH.mkdir(parents=True, exist_ok=True)
+    response = request.execute()
+
+    playlist = response["items"][0]
+    playlist_id = playlist["id"]
+    playlist_video_num = int(playlist["contentDetails"]["itemCount"])
+
+    pl_request = youtube.playlistItems().list(
+        part="snippet", playlistId=playlist_id, maxResults=playlist_video_num
+    )
+
+    pl_response = pl_request.execute()
+
+    video_records = []
+
+    for video in pl_response["items"]:
+
+        data = {}
+        vid = video["snippet"]["resourceId"]["videoId"]
+        data["vid"] = vid
+        data["description"] = video["snippet"]["description"]
+        data["title"] = video["snippet"]["title"]
+        data["thumbnail_url"] = video["snippet"]["thumbnails"]["high"]["url"]
+        data["videos"] = [
+            {
+                "type": "youtube",
+                "url": f"https://www.youtube.com/watch?v={vid}",
+            }
+        ]
+
+        video_records.append(data)
 
     source = ConferenceInfoSource(
         requests.get(os.environ["URL"]).json(),
@@ -140,33 +145,26 @@ def upload_video():
     for session in source.iter_sessions():
         body = build_body(session)
         try:
-            vid_path = choose_video(session, VIDEO_PATHS)
+            vid = choose_video(session, video_records)
         except ValueError:
             print(f"No match, ignoring {session.title}")
             continue
+        print(f"Updating {vid} with {body}")
 
-        print(f"Uploading {session.title}")
-        print(f"    {vid_path}")
-
-        media = apiclient.http.MediaInMemoryUpload(
-            media_batch_reader(vid_path), resumable=True
+        request = youtube.videos().update(
+            part="snippet,status,recordingDetails",
+            body={**body, "id": vid},
         )
-        request = youtube.videos().insert(
-            part=",".join(body.keys()), body=body, media_body=media
-        )
+        response = request.execute()
 
-        with tqdm.tqdm(total=100, ascii=True) as progressbar:
-            prev = 0
-            while True:
-                status, response = request.next_chunk()
-                if status:
-                    curr = int(status.progress() * 100)
-                    progressbar.update(curr - prev)
-                    prev = curr
-                if response:
-                    break
-        print(f"    Done, as: https://youtu.be/{response['id']}")
-
-        new_name = DONE_DIR_PATH.joinpath(vid_path.name)
-        print(f"    {vid_path} -> {new_name}")
-        vid_path.rename(new_name)
+        # with tqdm.tqdm(total=100, ascii=True) as progressbar:
+        #     prev = 0
+        #     while True:
+        #         status, response = request.next_chunk()
+        #         if status:
+        #             curr = int(status.progress() * 100)
+        #             progressbar.update(curr - prev)
+        #             prev = curr
+        #         if response:
+        #             break
+        # print(f"    Done, as: https://youtu.be/{response['id']}")

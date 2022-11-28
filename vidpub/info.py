@@ -27,8 +27,7 @@ VIDEO_TITLE_LIMIT = 100
 
 
 def _escape_return_string(f) -> typing.Callable[..., str]:
-    """YouTube wants you to escape angled brackets in title and description.
-    """
+    """YouTube wants you to escape angled brackets in title and description."""
 
     @functools.wraps(f)
     def inner(*args, **kwargs):
@@ -110,7 +109,13 @@ class ConferenceInfoSource:
 
     def iter_sessions(self) -> typing.Iterator[Session]:
         for data in self._session_data:
-            if data["type"] not in ("talk", "keynote", "community-track", "tutorial", "sponsored"):
+            if data["type"] not in (
+                "talk",
+                "keynote",
+                "community-track",
+                "tutorial",
+                "sponsored",
+            ):
                 continue
 
             title = data["en"]["title"]
