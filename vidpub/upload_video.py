@@ -11,12 +11,10 @@ import requests
 
 import apiclient.http
 import fuzzywuzzy.fuzz
-
-from .info import Conference, ConferenceInfoSource, Session
-
 from apiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 
+from .info import Conference, ConferenceInfoSource, Session
 
 # Video publisher variables
 YOUTUBE_SCOPE = "https://www.googleapis.com/auth/youtube"
@@ -37,7 +35,7 @@ def guess_language(s: str) -> str:
     The only two possible return values are `zh-hant` and `en`.
 
     Nothing scientific, just a vaguely educated guess. If more than half of the
-    string is ASCII, probably English; othereise we assume it's Chinese.
+    string is ASCII, probably English; otherwise we assume it's Chinese.
     """
     if sum(c in string.ascii_letters for c in s) > len(s) / 2:
         return "en"
@@ -76,7 +74,7 @@ def build_body(session: Session) -> dict:
 def format_datetime_for_google(dt: datetime.datetime) -> str:
     """Format a datetime into ISO format for Google API.
 
-    Google API is wierdly strict on the format here. It REQUIRES exactly
+    Google API is weirdly strict on the format here. It REQUIRES exactly
     three digits of milliseconds, and only accepts "Z" suffix (not +00:00),
     so we need to roll our own formatting instead relying on `isoformat()`.
     """
@@ -88,7 +86,7 @@ def get_match_ratio(session: Session, path: pathlib.Path) -> float:
 
 
 def choose_video(session: Session, video_paths: list) -> pathlib.Path:
-   """Look through the file list and choose the one that "looks most like it"."""
+    """Look through the file list and choose the one that "looks most like it"."""
     score, match = max((get_match_ratio(session, p), p) for p in video_paths)
     if score < 70:
         raise ValueError("no match")
