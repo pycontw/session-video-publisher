@@ -1,13 +1,8 @@
 import datetime
-
 import json
 import os
 
-import requests
-
-
 from apiclient.discovery import build
-
 from slugify import slugify
 
 # Video data generator variables
@@ -42,13 +37,11 @@ def extract_info(description: str):
     return speaker, recorded_day
 
 
-
 def generate_playlist(output_dir: str):
     print(f"Generating playlist information...")
 
     # build youtube connection
     youtube = build("youtube", "v3", developerKey=YOUTUBE_API_KEY)
-
 
     # generate playlist
     playlist_id = ''
@@ -95,10 +88,8 @@ def generate_playlist(output_dir: str):
     else:
         print(f"[Warning] The video number exceeds maximum limit.")
 
-
     if playlist_video_num > MAX_RESULT_LIMIT:
         print(f"[Warning] The video number exceeds maximum limit, please set MAX_RESULT_LIMIT to larger value.")
-
 
     pl_request = youtube.playlistItems().list(
         part='snippet',

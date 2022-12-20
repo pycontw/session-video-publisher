@@ -97,13 +97,13 @@ class Session:
 
 
 class ConferenceInfoSource:
-    _confernece: Conference
+    _conference: Conference
     _rooms: typing.Dict[str, str]
     _speakers: typing.Dict[str, Speaker]
     _session_data: typing.List[dict]
 
-    def __init__(self, data: dict, confernece: Conference):
-        self._confernece = confernece
+    def __init__(self, data: dict, conference: Conference):
+        self._conference = conference
         self._rooms = {d["id"]: d["en"]["name"] for d in data["rooms"]}
         self._speakers = {d["id"]: Speaker(d) for d in data["speakers"]}
         self._session_data = data["sessions"]
@@ -123,7 +123,7 @@ class ConferenceInfoSource:
                 lang = "zh-hant"
 
             yield Session(
-                conference=self._confernece,
+                conference=self._conference,
                 title=title,
                 description=data["en"]["description"],
                 start=dateutil.parser.parse(data["start"]),
