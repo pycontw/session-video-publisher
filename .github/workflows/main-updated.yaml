@@ -1,9 +1,9 @@
-name: main branch updated
+name: master branch updated
 
 on:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   bump-version:
@@ -22,7 +22,7 @@ jobs:
         uses: commitizen-tools/commitizen-action@master
         with:
           github_token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-          branch: main
+          branch: master
 
   publish-github-page:
     runs-on: ubuntu-latest
