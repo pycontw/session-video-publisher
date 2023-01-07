@@ -6,7 +6,8 @@ tag_format = "$version"
 
 
 [tool.black]
-line-length = 88
+line-length = 79
+target_version = ['py37']
 include = '\.pyi?$'
 exclude = '''
 /(

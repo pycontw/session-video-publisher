@@ -28,9 +28,23 @@ mkdocs = "*"
 mkdocs-material = ">=7.0.6"
 
 [packages]
+fuzzywuzzy = '*'
+google-api-python-client = '*'
+google-auth-oauthlib = '*'
+python-dateutil = '*'
+python-levenshtein = '*'
+pytz = '*'
+requests = '*'
+requests-oauthlib = '*'
+tqdm = '*'
+slugify = "*"
 
 [pipenv]
 allow_prereleases = true
 
 [requires]
 python_version = "3.7"
+
+[scripts]
+upload = 'python -m vidpub --upload'
+playlist = 'python -m vidpub --playlist'

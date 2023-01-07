@@ -6,6 +6,7 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
+*.py[co]
 *$py.class
 
 # C extensions
@@ -143,3 +144,10 @@ dmypy.json
 cython_debug/
 
 # End of https://www.toptal.com/developers/gitignore/api/python
+
+# Project related
+.vs
+*.code-workspace
+
+# Client secrets downloaded from Google Console.
+client_id.json
