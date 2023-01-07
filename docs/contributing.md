@@ -3,13 +3,13 @@
 ### Step 2. Clone the repository from your GitHub
 
 ```sh
-git clone https://github.com/[YOUR GITHUB ACCOUNT]/session_video_publisher.git
+git clone https://github.com/[YOUR GITHUB ACCOUNT]/session-video-publisher.git
 ```
 
 ### Step 3. Add this repository to the remote in your local repository
 
 ```sh
-git remote add upstream "https://github.com/iknowright/session-video-publisher"
+git remote add upstream "https://github.com/pycontw/session-video-publisher"
 ```
 
 You can pull the latest code in main branch through `git pull upstream main` afterward.
