@@ -46,5 +46,5 @@ allow_prereleases = true
 python_version = "3.7"
 
 [scripts]
-upload = 'python -m vidpub --upload'
-playlist = 'python -m vidpub --playlist'
+upload = 'python -m session_video_publisher --upload'
+playlist = 'python -m session_video_publisher --playlist'
