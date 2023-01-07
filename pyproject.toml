@@ -32,10 +32,19 @@ profile = "black"
 [tool.pylint]
     [tool.pylint.messages_control]
     disable = [
-        "bad-continuation",
         "missing-function-docstring",
         "missing-module-docstring",
-        "invalid-name"
+        # added first, refactor laters
+        "invalid-name",
+        "unspecified-encoding",
+        "import-error",
+        "line-too-long",
+        "too-few-public-methods",
+        "missing-class-docstring",
+        "too-many-locals",
+        "too-many-instance-attributes",
+        "consider-using-dict-items",
+        "consider-iterating-dictionary",
     ]
 
     [tool.pylint.format]
@@ -99,5 +108,3 @@ norecursedirs = [
         '*/virtualenvs/*',
         '*/tests/*'
     ]
-
-

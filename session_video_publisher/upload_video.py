@@ -105,7 +105,7 @@ def media_batch_reader(file_path, chuncksize=64 * (1 << 20)):
 
 
 def upload_video():
-    print(f"Uploading videos...")
+    print("Uploading videos...")
 
     # build youtube connection
     flow = InstalledAppFlow.from_client_secrets_file(

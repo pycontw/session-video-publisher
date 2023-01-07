@@ -37,7 +37,7 @@ def extract_info(description: str):
 
 
 def generate_playlist(output_dir: str):
-    print(f"Generating playlist information...")
+    print("Generating playlist information...")
 
     # build youtube connection
     youtube = build("youtube", "v3", developerKey=YOUTUBE_API_KEY)
@@ -86,11 +86,11 @@ def generate_playlist(output_dir: str):
                 print(f"Playlist title = {playlist['snippet']['title']}")
                 print(f"Playlist Video numbers = {playlist_video_num}")
     else:
-        print(f"[Warning] The video number exceeds maximum limit.")
+        print("[Warning] The video number exceeds maximum limit.")
 
     if playlist_video_num > MAX_RESULT_LIMIT:
         print(
-            f"[Warning] The video number exceeds maximum limit, please set MAX_RESULT_LIMIT to larger value."
+            "[Warning] The video number exceeds maximum limit, please set MAX_RESULT_LIMIT to larger value."
         )
 
     pl_request = youtube.playlistItems().list(
