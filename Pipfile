@@ -1,3 +1,32 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+# task management
+invoke = "*"
+# test
+pytest = ">=6.0.1"
+pytest-cov = "*"
+pytest-mock = "*"
+coverage = {extras = ["toml"], version = "*"}
+# style
+black = "*"
+isort = ">=5.0.0"
+flake8 = "*"
+mypy = ">=0.910"
+pylint = ">=2.7.0"
+# security
+bandit = "*"
+pip-audit = "*"
+# git
+commitizen = "*"
+pre-commit = "*"
+# documentation
+mkdocs = "*"
+mkdocs-material = ">=7.0.6"
+
 [packages]
 fuzzywuzzy = '*'
 google-api-python-client = '*'
@@ -10,12 +39,12 @@ requests-oauthlib = '*'
 tqdm = '*'
 slugify = "*"
 
-[dev-packages]
-mypy = '*'
+[pipenv]
+allow_prereleases = true
 
 [requires]
-python_version = '3.7'
+python_version = "3.7"
 
 [scripts]
-upload = 'python -m vidpub --upload'
-playlist = 'python -m vidpub --playlist'
+upload = 'python -m session_video_publisher --upload'
+playlist = 'python -m session_video_publisher --playlist'

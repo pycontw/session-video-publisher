@@ -1,0 +1,9 @@
+site_name: session-video-publisher
+nav:
+  - Home: README.md
+  - Contributing: contributing.md
+theme:
+  name: 'material'
+repo_url: https://github.com/iknowright/session_video_publisher
+remote_branch: gh-pages
+remote_name: origin

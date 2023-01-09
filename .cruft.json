@@ -1,0 +1,24 @@
+{
+  "template": "https://github.com/Lee-W/cookiecutter-python-template",
+  "commit": "bab6ce03c4a2fb19a48a475f281165c699efc3a9",
+  "checkout": null,
+  "context": {
+    "cookiecutter": {
+      "project_name": "session-video-publisher",
+      "project_slug": "session-video-publisher",
+      "project_description": "Short Descirption for Python Project",
+      "github_username": "iknowright",
+      "github_url": "https://github.com/iknowright/session-video-publisher",
+      "python_version": "3.7",
+      "dependency_management_tool": "pipenv",
+      "default_branch": "master",
+      "use_strict_mypy_config": "n",
+      "build_pypi_package": "n",
+      "build_docker_image": "n",
+      "open_source_license": "Not open source",
+      "_template_version": "1.4.0",
+      "_template": "https://github.com/Lee-W/cookiecutter-python-template"
+    }
+  },
+  "directory": null
+}

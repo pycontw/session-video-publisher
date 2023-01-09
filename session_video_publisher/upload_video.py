@@ -1,16 +1,16 @@
 import datetime
-import itertools
 import functools
 import io
+import itertools
 import os
 import pathlib
 import string
-import tqdm
-import pytz
-import requests
 
 import apiclient.http
 import fuzzywuzzy.fuzz
+import pytz
+import requests
+import tqdm
 from apiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 
@@ -70,7 +70,6 @@ def build_body(session: Session) -> dict:
     }
 
 
-
 def format_datetime_for_google(dt: datetime.datetime) -> str:
     """Format a datetime into ISO format for Google API.
 
@@ -92,6 +91,7 @@ def choose_video(session: Session, video_paths: list) -> pathlib.Path:
         raise ValueError("no match")
     return match
 
+
 def media_batch_reader(file_path, chuncksize=64 * (1 << 20)):
     print(f"Reading Vedio from:\n\t{file_path}")
     out = io.BytesIO()
@@ -103,8 +103,9 @@ def media_batch_reader(file_path, chuncksize=64 * (1 << 20)):
             out.write(block)
     return out.getvalue()
 
+
 def upload_video():
-    print(f"Uploading videos...")
+    print("Uploading videos...")
 
     # build youtube connection
     flow = InstalledAppFlow.from_client_secrets_file(
@@ -113,7 +114,6 @@ def upload_video():
     credentials = flow.run_console()
 
     youtube = build("youtube", "v3", credentials=credentials)
-
 
     # upload video
     VIDEO_ROOT = pathlib.Path(os.environ["VIDEO_ROOT"]).resolve()

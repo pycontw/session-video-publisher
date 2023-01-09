@@ -12,7 +12,6 @@ import os
 import pathlib
 import subprocess
 
-
 i_dir = pathlib.Path(os.environ["VIDEO_ROOT"], "in")
 o_dir = pathlib.Path(os.environ["VIDEO_ROOT"], "out")
 

@@ -1,19 +1,28 @@
 import argparse
 
-from .upload_video import upload_video
 from .generate_playlist import generate_playlist
+from .upload_video import upload_video
 
 
 def parse_args(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-u", "--upload", action="store_true", help="Upload videos to YouTube channel"
+        "-u",
+        "--upload",
+        action="store_true",
+        help="Upload videos to YouTube channel",
     )
     parser.add_argument(
-        "-p", "--playlist", action="store_true", help="Generate playlist information in json files"
+        "-p",
+        "--playlist",
+        action="store_true",
+        help="Generate playlist information in json files",
     )
     parser.add_argument(
-        "-o", "--output_dir", default="./videos", help="Output path of video information"
+        "-o",
+        "--output_dir",
+        default="./videos",
+        help="Output path of video information",
     )
     return parser.parse_args(argv)
 
