@@ -6,12 +6,12 @@ import os
 import pathlib
 import string
 
-import apiclient.http
+import googleapiclient.http
 import fuzzywuzzy.fuzz
 import pytz
 import requests
 import tqdm
-from apiclient.discovery import build
+from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 
 from .info import Conference, ConferenceInfoSource, Session
@@ -146,7 +146,7 @@ def upload_video():
         print(f"Uploading {session.title}")
         print(f"    {vid_path}")
 
-        media = apiclient.http.MediaInMemoryUpload(
+        media = googleapiclient.http.MediaInMemoryUpload(
             media_batch_reader(vid_path), resumable=True
         )
         request = youtube.videos().insert(

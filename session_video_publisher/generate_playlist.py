@@ -2,7 +2,7 @@ import datetime
 import json
 import os
 
-from apiclient.discovery import build
+from googleapiclient.discovery import build
 from slugify import slugify
 
 # Video data generator variables
