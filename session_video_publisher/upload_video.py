@@ -92,13 +92,13 @@ def choose_video(session: Session, video_paths: list) -> pathlib.Path:
     return match
 
 
-def media_batch_reader(file_path, chuncksize=64 * (1 << 20)):
-    print(f"Reading Vedio from:\n\t{file_path}")
+def media_batch_reader(file_path, chunk_size=64 * (1 << 20)):
+    print(f"Reading video from:\n\t{file_path}")
     out = io.BytesIO()
-    total = file_path.stat().st_size // chuncksize
+    total = file_path.stat().st_size // chunk_size
     with open(file_path, "rb") as f:
         for block in tqdm.tqdm(
-            functools.partial(f.read, chuncksize), total=total
+            functools.partial(f.read, chunk_size), total=total
         ):
             out.write(block)
     return out.getvalue()
