@@ -47,4 +47,5 @@ python_version = "3.7"
 
 [scripts]
 upload = 'python -m session_video_publisher --upload'
+update_desc = 'python -m session_video_publisher --update_desc'
 playlist = 'python -m session_video_publisher --playlist'
