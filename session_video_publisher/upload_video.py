@@ -1,95 +1,17 @@
-import datetime
 import functools
 import io
 import itertools
-import os
 import pathlib
-import string
 
-import fuzzywuzzy.fuzz
 import googleapiclient.http
-import pytz
 import requests
 import tqdm
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
-from .info import Conference, ConferenceInfoSource, Session
-
-# Video publisher variables
-YOUTUBE_SCOPE = "https://www.googleapis.com/auth/youtube"
-YOUTUBE_UPLOAD_SCOPE = "https://www.googleapis.com/auth/youtube.upload"
-
-FIRST_DATE = datetime.date(
-    int(os.environ["YEAR"]), int(os.environ["MONTH"]), int(os.environ["DAY"])
-)
-
-CONFERENCE_NAME = f"PyCon Taiwan {FIRST_DATE.year}"
-
-TIMEZONE_TAIPEI = pytz.timezone("Asia/Taipei")
-
-
-def guess_language(s: str) -> str:
-    """Guess language of a string.
-
-    The only two possible return values are `zh-hant` and `en`.
-
-    Nothing scientific, just a vaguely educated guess. If more than half of the
-    string is ASCII, probably English; otherwise we assume it's Chinese.
-    """
-    if sum(c in string.ascii_letters for c in s) > len(s) / 2:
-        return "en"
-    return "zh-hant"
-
-
-def build_body(session: Session) -> dict:
-    title = session.render_video_title()
-
-    return {
-        "snippet": {
-            "title": title,
-            "description": session.render_video_description(),
-            "tags": [
-                session.conference.name,
-                "PyCon Taiwan",
-                "PyCon",
-                "Python",
-            ],
-            "defaultAudioLanguage": session.lang,
-            "defaultLanguage": guess_language(title),
-            "categoryId": "28",
-        },
-        "status": {
-            "license": "creativeCommon",
-            "privacyStatus": "unlisted",
-            "publishAt": None,
-        },
-        "recordingDetails": {
-            "recordingDate": format_datetime_for_google(session.start)
-        },
-    }
-
-
-def format_datetime_for_google(dt: datetime.datetime) -> str:
-    """Format a datetime into ISO format for Google API.
-
-    Google API is weirdly strict on the format here. It REQUIRES exactly
-    three digits of milliseconds, and only accepts "Z" suffix (not +00:00),
-    so we need to roll our own formatting instead relying on `isoformat()`.
-    """
-    return dt.astimezone(pytz.utc).strftime(r"%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
-
-
-def get_match_ratio(session: Session, path: pathlib.Path) -> float:
-    return fuzzywuzzy.fuzz.ratio(session.title, path.stem)
-
-
-def choose_video(session: Session, video_paths: list) -> pathlib.Path:
-    """Look through the file list and choose the one that "looks most like it"."""
-    score, match = max((get_match_ratio(session, p), p) for p in video_paths)
-    if score < 70:
-        raise ValueError("no match")
-    return match
+from .common import build_body, choose_video
+from .config import ConfigUpload as Config
+from .info import Conference, ConferenceInfoSource
 
 
 def media_batch_reader(file_path, chunk_size=64 * (1 << 20)):
@@ -105,18 +27,20 @@ def media_batch_reader(file_path, chunk_size=64 * (1 << 20)):
 
 
 def upload_video():
+    Config.variable_check()
+
     print("Uploading videos...")
 
     # build youtube connection
     flow = InstalledAppFlow.from_client_secrets_file(
-        os.environ["OAUTH2_CLIENT_SECRET"], scopes=[YOUTUBE_UPLOAD_SCOPE]
+        Config.OAUTH2_CLIENT_SECRET, scopes=[Config.YOUTUBE_UPLOAD_SCOPE]
     )
     credentials = flow.run_console()
 
     youtube = build("youtube", "v3", credentials=credentials)
 
     # upload video
-    VIDEO_ROOT = pathlib.Path(os.environ["VIDEO_ROOT"]).resolve()
+    VIDEO_ROOT = pathlib.Path(Config.VIDEO_ROOT).resolve()
     print(f"Reading video files from {VIDEO_ROOT}")
 
     VIDEO_PATHS = list(
@@ -131,8 +55,10 @@ def upload_video():
     DONE_DIR_PATH.mkdir(parents=True, exist_ok=True)
 
     source = ConferenceInfoSource(
-        requests.get(os.environ["URL"]).json(),
-        Conference(CONFERENCE_NAME, FIRST_DATE, TIMEZONE_TAIPEI),
+        requests.get(Config.URL).json(),
+        Conference(
+            Config.CONFERENCE_NAME, Config.FIRST_DATE, Config.TIMEZONE_TAIPEI
+        ),
     )
 
     for session in source.iter_sessions():

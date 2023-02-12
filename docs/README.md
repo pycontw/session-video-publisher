@@ -44,6 +44,12 @@ To use:
     PLAYLIST_TITLE='YOUR_YOUTUBE_PLAYLIST_TITLE'
 
 
+    # ===== Followings are for playlist description update  =====
+
+    # YouTube playlist information
+    PLAYLIST_ID='YOUR_YOUTUBE_CHANNEL_ID'
+
+
     # ===== Followings are for both actions =====
 
     # First day of the conference.
