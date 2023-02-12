@@ -6,13 +6,13 @@ import os
 import pathlib
 import string
 
-import googleapiclient.http
 import fuzzywuzzy.fuzz
+import googleapiclient.http
 import pytz
 import requests
 import tqdm
-from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
 
 from .info import Conference, ConferenceInfoSource, Session
 
