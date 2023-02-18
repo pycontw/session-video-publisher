@@ -63,6 +63,7 @@ class ConfigUpload(Config):
 
 class ConfigUpdate(Config):
     OAUTH2_CLIENT_SECRET = os.environ.get("OAUTH2_CLIENT_SECRET")
+    YOUTUBE_API_KEY = os.environ["YOUTUBE_API_KEY"]
     URL = os.environ.get("URL")
     PLAYLIST_ID = os.environ.get("PLAYLIST_ID")
     CONFERENCE_NAME = f"PyCon Taiwan {Config.YEAR}"
@@ -80,3 +81,6 @@ class ConfigUpdate(Config):
         assert (
             cls.PLAYLIST_ID
         ), "envvar PLAYLIST_ID missing, please specify it in the .env file"
+        assert (
+            cls.YOUTUBE_API_KEY
+        ), "envvar YOUTUBE_API_KEY missing, please specify it in the .env file"

@@ -2,7 +2,7 @@ import requests
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
-from .common import build_body, choose_video
+from .common import build_body, choose_video_from_playlist_titles
 from .config import ConfigUpdate as Config
 from .info import Conference, ConferenceInfoSource
 
@@ -21,7 +21,12 @@ def update_video():
         Config.OAUTH2_CLIENT_SECRET, scopes=YOUTUBE_UPDATE_SCOPE
     )
     credentials = flow.run_console()
-    youtube = build("youtube", "v3", credentials=credentials)
+    youtube = build(
+        "youtube",
+        "v3",
+        credentials=credentials,
+        developerKey=Config.YOUTUBE_API_KEY,
+    )
 
     request = youtube.playlists().list(
         part="contentDetails, snippet, id",
@@ -69,11 +74,11 @@ def update_video():
     for session in source.iter_sessions():
         body = build_body(session)
         try:
-            vid = choose_video(session, video_records)
+            vid = choose_video_from_playlist_titles(session, video_records)
         except ValueError:
             print(f"No match, ignoring {session.title}")
             continue
-        print(f"Updating {vid} with {body}")
+        print(f'Updating "{vid}" with "{body}"')
 
         request = youtube.videos().update(
             part="snippet,status,recordingDetails",

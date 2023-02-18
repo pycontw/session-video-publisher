@@ -1,6 +1,7 @@
 import datetime
 import pathlib
 import string
+from typing import List
 
 import fuzzywuzzy.fuzz
 import pytz
@@ -59,13 +60,29 @@ def format_datetime_for_google(dt: datetime.datetime) -> str:
     return dt.astimezone(pytz.utc).strftime(r"%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
 
-def get_match_ratio(session: Session, path: pathlib.Path) -> float:
-    return fuzzywuzzy.fuzz.ratio(session.title, path.stem)
+def get_match_ratio(session: Session, target_string: str) -> float:
+    return fuzzywuzzy.fuzz.ratio(session.title, target_string)
 
 
-def choose_video(session: Session, video_paths: list) -> pathlib.Path:
+def choose_video_from_playlist_titles(
+    session: Session, video_records: list
+) -> str:
     """Look through the file list and choose the one that "looks most like it"."""
-    score, match = max((get_match_ratio(session, p), p) for p in video_paths)
+    score, match = max(
+        (get_match_ratio(session, p["title"]), p["vid"]) for p in video_records
+    )
+    if score < 70:
+        raise ValueError("no match")
+    return match
+
+
+def choose_video_from_paths(
+    session: Session, video_paths: List[pathlib.Path]
+) -> pathlib.Path:
+    """Look through the file list and choose the one that "looks most like it"."""
+    score, match = max(
+        (get_match_ratio(session, p.stem), p.stem) for p in video_paths
+    )
     if score < 70:
         raise ValueError("no match")
     return match

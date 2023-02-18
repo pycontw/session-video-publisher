@@ -41,10 +41,12 @@ OAUTH2_CLIENT_SECRET='path/to/oauth-client-secret.json'
 URL='https://tw.pycon.org/2018/ccip/'
 
 
-# ===== Followings are for playlist generation =====
+# ===== Followings are for playlist generation and update =====
 # YouTube data v3 API key
 YOUTUBE_API_KEY='YOUR_YOUTUBE_API_KEY'
 
+
+# ===== Followings are for playlist generation =====
 # YouTube channel information
 # You can provide CHANNEL_ID & PLAYLIST_TITLE
 # or provide PLAYLIST_ID information is enough
