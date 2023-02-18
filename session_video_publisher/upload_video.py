@@ -9,7 +9,7 @@ import tqdm
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
-from .common import build_body, choose_video_from_paths
+from .common import build_body, choose_video
 from .config import ConfigUpload as Config
 from .info import Conference, ConferenceInfoSource
 
@@ -64,7 +64,7 @@ def upload_video():
     for session in source.iter_sessions():
         body = build_body(session)
         try:
-            vid_path = choose_video_from_paths(session, VIDEO_PATHS)
+            vid_path = choose_video(session, VIDEO_PATHS, "path")
         except ValueError:
             print(f"No match, ignoring {session.title}")
             continue

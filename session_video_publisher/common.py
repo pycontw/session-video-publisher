@@ -1,7 +1,7 @@
 import datetime
 import pathlib
 import string
-from typing import List
+from typing import Dict, List, Union
 
 import fuzzywuzzy.fuzz
 import pytz
@@ -64,25 +64,21 @@ def get_match_ratio(session: Session, target_string: str) -> float:
     return fuzzywuzzy.fuzz.ratio(session.title, target_string)
 
 
-def choose_video_from_playlist_titles(
-    session: Session, video_records: list
+def choose_video(
+    session: Session, source: List[Union[pathlib.Path, Dict]], strategy: str
 ) -> str:
     """Look through the file list and choose the one that "looks most like it"."""
-    score, match = max(
-        (get_match_ratio(session, p["title"]), p["vid"]) for p in video_records
-    )
-    if score < 70:
-        raise ValueError("no match")
-    return match
-
-
-def choose_video_from_paths(
-    session: Session, video_paths: List[pathlib.Path]
-) -> pathlib.Path:
-    """Look through the file list and choose the one that "looks most like it"."""
-    score, match = max(
-        (get_match_ratio(session, p.stem), p.stem) for p in video_paths
-    )
+    choose_video_strategy = {
+        "title": lambda source: max(
+            (get_match_ratio(session, p["title"]), p["vid"]) for p in source
+        ),
+        "path": lambda source: max(
+            (get_match_ratio(session, p.stem), p.stem) for p in source
+        ),
+    }
+    if strategy not in choose_video_strategy:
+        raise ValueError("strategy should be 'title' or 'path'")
+    score, match = choose_video_strategy[strategy](source)
     if score < 70:
         raise ValueError("no match")
     return match

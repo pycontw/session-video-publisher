@@ -2,7 +2,7 @@ import requests
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
-from .common import build_body, choose_video_from_playlist_titles
+from .common import build_body, choose_video
 from .config import ConfigUpdate as Config
 from .info import Conference, ConferenceInfoSource
 
@@ -74,7 +74,7 @@ def update_video():
     for session in source.iter_sessions():
         body = build_body(session)
         try:
-            vid = choose_video_from_playlist_titles(session, video_records)
+            vid = choose_video(session, video_records, "title")
         except ValueError:
             print(f"No match, ignoring {session.title}")
             continue
