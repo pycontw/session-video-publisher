@@ -12,49 +12,58 @@ Supported features:
 * Upload session videos to YouTube.
 * Generate PyCon YouTube channel video data.
 Purpose: Generating PyCon YouTube channel video data for [PyVideo](https://github.com/pyvideo/data) usage
+* Update existing PyConTW youtube playlist's video descriptions.
 
 To use:
 * Clone the project.
 * Add `.env` in project containing:
 
 ```
-
-    # ===== Followings are for upload videos =====
-    # Point to the directory containing video files.
-    # Video files should be named by the session title. They don't need to be
-    # exactly identical, the script will use fuzzy match to find them.
-    VIDEO_ROOT='path/to/directory/containing/video/files'
-
-    # YouTube OAuth2 secret files, downloaded from Google Console.
-    OAUTH2_CLIENT_SECRET='path/to/oauth-client-secret.json'
-
-    # Get talks list API.
-    URL='https://tw.pycon.org/2018/ccip/'
+# ===== Followings are for required by all commands =====
+# First day of the PyConTW conference.
+YEAR='2020'
+MONTH='9'
+DAY='5'
 
 
-    # ===== Followings are for playlist generation =====
-
-    # YouTube data v3 API key
-    YOUTUBE_API_KEY='YOUR_YOUTUBE_API_KEY'
-
-    # YouTube channel information
-    # You can provide CHANNEL_ID & PLAYLIST_TITLE
-    # or provide PLAYLIST_ID information is enough
-    CHANNEL_ID='YOUR_YOUTUBE_CHANNEL_ID'
-    PLAYLIST_TITLE='YOUR_YOUTUBE_PLAYLIST_TITLE'
+# ===== Followings are for upload videos =====
+# Point to the directory containing video files.
+# Video files should be named by the session title. They don't need to be
+# exactly identical, the script will use fuzzy match to find them.
+VIDEO_ROOT='path/to/directory/containing/video/files'
 
 
-    # ===== Followings are for both actions =====
+# ===== Followings are for upload videos and update video description =====
+# YouTube OAuth2 secret files, downloaded from Google Console.
+OAUTH2_CLIENT_SECRET='path/to/oauth-client-secret.json'
 
-    # First day of the conference.
-    YEAR='2020'
-    MONTH='9'
-    DAY='5'
+# Get talks list API (video session api).
+URL='https://tw.pycon.org/2018/ccip/'
+
+
+# ===== Followings are for playlist generation and update =====
+# YouTube data v3 API key
+YOUTUBE_API_KEY='YOUR_YOUTUBE_API_KEY'
+
+
+# ===== Followings are for playlist generation =====
+# YouTube channel information
+# You can provide CHANNEL_ID & PLAYLIST_TITLE
+# or provide PLAYLIST_ID information is enough
+CHANNEL_ID='YOUR_YOUTUBE_CHANNEL_ID'
+PLAYLIST_TITLE='YOUR_YOUTUBE_PLAYLIST_TITLE'
+# PLAYLIST_ID='YOUR_PLAYLIST_ID'
+
+
+# ===== Followings are for playlist description update  =====
+# YouTube playlist information
+PLAYLIST_ID='YOUR_PLAYLIST_ID'
 ```
 
 * `pipenv sync`
 * `pipenv run upload` for uploading session videos
 * `pipenv run playlist` for generating video playlist data
+* `pipenv run update_desc` for updating video playlist description
 
 ## Troubleshooting
 The overall flow looks like the following:

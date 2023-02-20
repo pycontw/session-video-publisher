@@ -45,10 +45,13 @@ profile = "black"
         "too-many-instance-attributes",
         "consider-using-dict-items",
         "consider-iterating-dictionary",
+        # added, refactor later
+        "no-member",
     ]
 
     [tool.pylint.format]
     max-line-length = 88
+    min-similarity-lines = 8
 
 
 [tool.mypy]

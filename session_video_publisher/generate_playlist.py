@@ -2,20 +2,10 @@ import datetime
 import json
 import os
 
-from apiclient.discovery import build
+from googleapiclient.discovery import build
 from slugify import slugify
 
-# Video data generator variables
-FIRST_DATE = datetime.date(
-    int(os.environ["YEAR"]), int(os.environ["MONTH"]), int(os.environ["DAY"])
-)
-
-YOUTUBE_API_KEY = os.environ["YOUTUBE_API_KEY"]
-CHANNEL_ID = os.environ["CHANNEL_ID"]
-PLAYLIST_TITLE = os.environ.get("PLAYLIST_TITLE", "")
-PLAYLIST_ID = os.environ.get("PLAYLIST_ID", "")
-
-MAX_RESULT_LIMIT = 100
+from .config import ConfigGenerate as Config
 
 
 def extract_info(description: str):
@@ -27,7 +17,9 @@ def extract_info(description: str):
     for line in lines:
         if line.strip().lower().startswith("day"):
             day = int(line.strip().lower().split(",")[0].strip().split(" ")[1])
-            recorded_day = str(FIRST_DATE + datetime.timedelta(days=day - 1))
+            recorded_day = str(
+                Config.FIRST_DATE + datetime.timedelta(days=day - 1)
+            )
         elif line.strip().lower().startswith("speaker"):
             speaker.append(line.strip().split(":")[1].strip())
         else:
@@ -37,19 +29,23 @@ def extract_info(description: str):
 
 
 def generate_playlist(output_dir: str):
+    Config.variable_check()
+
     print("Generating playlist information...")
 
     # build youtube connection
-    youtube = build("youtube", "v3", developerKey=YOUTUBE_API_KEY)
+    youtube = build("youtube", "v3", developerKey=Config.YOUTUBE_API_KEY)
 
     # generate playlist
     playlist_id = ""
     playlist_video_num = 0
 
     # get specified playlist of the channel
-    if PLAYLIST_ID:
+    if Config.PLAYLIST_ID:
         request = youtube.playlists().list(
-            part="contentDetails, snippet", id=[PLAYLIST_ID], maxResults=1
+            part="contentDetails, snippet",
+            id=[Config.PLAYLIST_ID],
+            maxResults=1,
         )
 
         response = request.execute()
@@ -64,9 +60,11 @@ def generate_playlist(output_dir: str):
         print(f"Playlist title = {playlist['snippet']['title']}")
         print(f"Playlist Video numbers = {playlist_video_num}")
 
-    elif PLAYLIST_TITLE and not PLAYLIST_ID:
+    elif Config.PLAYLIST_TITLE and not Config.PLAYLIST_ID:
         request = youtube.playlists().list(
-            part="contentDetails, snippet", channelId=CHANNEL_ID, maxResults=10
+            part="contentDetails, snippet",
+            channelId=Config.CHANNEL_ID,
+            maxResults=10,
         )
 
         response = request.execute()
@@ -74,7 +72,7 @@ def generate_playlist(output_dir: str):
         # find the target playlist from .env setting
         for playlist in response["items"]:
             if (
-                PLAYLIST_TITLE.strip().lower()
+                Config.PLAYLIST_TITLE.strip().lower()
                 in playlist["snippet"]["title"].strip().lower()
             ):
                 playlist_id = playlist["id"]
@@ -88,7 +86,7 @@ def generate_playlist(output_dir: str):
     else:
         print("[Warning] The video number exceeds maximum limit.")
 
-    if playlist_video_num > MAX_RESULT_LIMIT:
+    if playlist_video_num > Config.MAX_RESULT_LIMIT:
         print(
             "[Warning] The video number exceeds maximum limit, please set MAX_RESULT_LIMIT to larger value."
         )

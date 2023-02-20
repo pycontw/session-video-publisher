@@ -1,6 +1,7 @@
 import argparse
 
 from .generate_playlist import generate_playlist
+from .update_video import update_video
 from .upload_video import upload_video
 
 
@@ -19,6 +20,11 @@ def parse_args(argv):
         help="Generate playlist information in json files",
     )
     parser.add_argument(
+        "--update_desc",
+        action="store_true",
+        help="Update video description in YouTube channel",
+    )
+    parser.add_argument(
         "-o",
         "--output_dir",
         default="./videos",
@@ -32,6 +38,9 @@ def main(argv=None):
 
     if options.upload:
         upload_video()
+
+    if options.update_desc:
+        update_video()
 
     if options.playlist:
         generate_playlist(options.output_dir)
