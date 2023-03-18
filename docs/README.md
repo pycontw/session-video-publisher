@@ -21,9 +21,9 @@ To use:
 ```
 # ===== Followings are for required by all commands =====
 # First day of the PyConTW conference.
-YEAR='2020'
+YEAR='2022'
 MONTH='9'
-DAY='5'
+DAY='3'
 
 
 # ===== Followings are for upload videos =====
@@ -38,7 +38,7 @@ VIDEO_ROOT='path/to/directory/containing/video/files'
 OAUTH2_CLIENT_SECRET='path/to/oauth-client-secret.json'
 
 # Get talks list API (video session api).
-URL='https://tw.pycon.org/2018/ccip/'
+URL='https://tw.pycon.org/prs/ccip/'
 
 
 # ===== Followings are for playlist generation and update =====
