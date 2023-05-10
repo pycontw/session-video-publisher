@@ -1,11 +1,9 @@
-import datetime
-import json
-import os
-
-from googleapiclient.discovery import build
-from slugify import slugify
-
 from .config import ConfigGenerate as Config
+from slugify import slugify
+from googleapiclient.discovery import build
+import os
+import json
+import datetime
 
 
 def extract_info(description: str):
@@ -26,6 +24,31 @@ def extract_info(description: str):
             pass
 
     return speaker, recorded_day
+
+
+def process_page_response(pl_response):
+    video_records = {}
+
+    for video in pl_response["items"]:
+        vid = video["snippet"]["resourceId"]["videoId"]
+        data = {}
+
+        data["description"] = video["snippet"]["description"]
+        data["speakers"], data["recorded"] = extract_info(
+            video["snippet"]["description"]
+        )
+        data["title"] = video["snippet"]["title"]
+        data["thumbnail_url"] = video["snippet"]["thumbnails"]["high"]["url"]
+        data["videos"] = [
+            {
+                "type": "youtube",
+                "url": f"https://www.youtube.com/watch?v={vid}",
+            }
+        ]
+
+        video_records[vid] = {"data": data}
+
+    return video_records
 
 
 def generate_playlist(output_dir: str):
@@ -91,32 +114,40 @@ def generate_playlist(output_dir: str):
             "[Warning] The video number exceeds maximum limit, please set MAX_RESULT_LIMIT to larger value."
         )
 
-    pl_request = youtube.playlistItems().list(
-        part="snippet", playlistId=playlist_id, maxResults=playlist_video_num
-    )
-
-    pl_response = pl_request.execute()
-
     video_records = {}
 
-    for video in pl_response["items"]:
-        vid = video["snippet"]["resourceId"]["videoId"]
-        data = {}
+    next_page_token = None
 
-        data["description"] = video["snippet"]["description"]
-        data["speakers"], data["recorded"] = extract_info(
-            video["snippet"]["description"]
+    while True:
+        pl_request = youtube.playlistItems().list(
+            part="snippet",
+            playlistId=playlist_id,
+            maxResults=Config.MAX_RESULT_LIMIT,
+            pageToken=next_page_token,
         )
-        data["title"] = video["snippet"]["title"]
-        data["thumbnail_url"] = video["snippet"]["thumbnails"]["high"]["url"]
-        data["videos"] = [
-            {
-                "type": "youtube",
-                "url": f"https://www.youtube.com/watch?v={vid}",
-            }
-        ]
 
-        video_records[vid] = {"data": data}
+        pl_response = pl_request.execute()
+
+        for video in pl_response["items"]:
+            vid = video["snippet"]["resourceId"]["videoId"]
+            data = {}
+
+            data["description"] = video["snippet"]["description"]
+            data["speakers"], data["recorded"] = extract_info(
+                video["snippet"]["description"]
+            )
+            data["title"] = video["snippet"]["title"]
+            data["thumbnail_url"] = video["snippet"]["thumbnails"]["high"]["url"]
+            data["videos"] = [{"type": "youtube", "url": f"https://www.youtube.com/watch?v={vid}", }]
+
+            video_records[vid] = {"data": data}
+
+        next_page_token = pl_response.get("nextPageToken")
+
+        if not next_page_token:
+            break
+
+    print(f"Number of items returned: {len(video_records)}")
 
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -134,5 +165,4 @@ def generate_playlist(output_dir: str):
             os.path.join(output_dir, f"{file_name}.json"), "w"
         ) as json_file:
             json.dump(data, json_file, indent=4)
-
         print(file_name)
